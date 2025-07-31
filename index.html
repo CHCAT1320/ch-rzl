@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Rizline Player</title>
+</head>
+<body>
+    <div id="body">
+        <input type="file" onchange="chartFiles(this.files)">
+        <input type="file" onchange="bgmFiles(this.files)">
+        <p id="fps"></p>
+        <div id="chartTime"></div>
+        <button onclick="start()">播放</button><br>
+        <canvas id="playerCanvas"></canvas>
+        <audio id="bgm"></audio>
+        <div id="test"></div>
+        <script src="js/ease.js"></script>
+        <script src="js/main.js"></script>
+    </div>
+</body>
+</html>

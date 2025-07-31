@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Easing Function Visualization</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: white;
+            border: 1px solid #ccc;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Random Easing Function Visualization</h1>
+    <canvas id="easingCanvas" width="600" height="400"></canvas>
+
+    <script>
+        // 引入用户提供的缓动函数代码
+        const { pow, sin, cos, PI } = Math;
+
+        // easing functions
+        function linear(x) {
+            return x;
+        }
+
+        function sineIn(x) {
+            return 1 - cos((x * PI) / 2);
+        }
+
+        function sineOut(x) {
+            return sin((x * PI) / 2);
+        }
+
+        function sineInOut(x) {
+            return (1 - cos(x * PI)) / 2;
+        }
+
+        function quadIn(x) {
+            return pow(x, 2);
+        }
+
+        function quadOut(x) {
+            return 1 - pow((1 - x), 2);
+        }
+
+        function quadInOut(x) {
+            x *= 2;
+            if (x < 1) {
+                return quadIn(x) / 2;
+            } else {
+                return (-(pow((x - 2), 2) - 2)) / 2;
+            }
+        }
+
+        function cubicIn(x) {
+            return pow(x, 3);
+        }
+
+        function cubicOut(x) {
+            return 1 + pow((x - 1), 3);
+        }
+
+        function cubicInOut(x) {
+            x *= 2;
+            if (x < 1) {
+                return cubicIn(x) / 2;
+            } else {
+                return (pow((x - 2), 3) + 2) / 2;
+            }
+        }
+
+        function quartIn(x) {
+            return pow(x, 4);
+        }
+
+        function quartOut(x) {
+            return 1 - pow((x - 1), 4);
+        }
+
+        function quartInOut(x) {
+            x *= 2;
+            if (x < 1) {
+                return quartIn(x) / 2;
+            } else {
+                return (-(pow((x - 2), 4) - 2)) / 2;
+            }
+        }
+
+        function _0(x) {
+            return 0;
+        }
+
+        function _1(x) {
+            return 1;
+        }
+
+        // easing functions array
+        const easeFuncs = [
+            linear,
+            sineIn,
+            sineOut,
+            sineInOut,
+            quadIn,
+            quadOut,
+            quadInOut,
+            cubicIn,
+            cubicOut,
+            cubicInOut,
+            quartIn,
+            quartOut,
+            quartInOut,
+            _0,
+            _1
+        ];
+
+        // 随机选择一个缓动函数
+        const randomEase = easeFuncs[Math.floor(Math.random() * easeFuncs.length)];
+
+        // 绘制缓动函数曲线
+        function drawRandomEasingCurve() {
+            const canvas = document.getElementById('easingCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 设置坐标系
+            const padding = 40;
+            const graphWidth = canvas.width - 2 * padding;
+            const graphHeight = canvas.height - 2 * padding;
+
+            // 绘制坐标轴
+            ctx.beginPath();
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+
+            // 绘制刻度
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#333';
+            ctx.fillText('0', padding - 10, canvas.height - padding + 15);
+            ctx.fillText('1', canvas.width - padding - 10, canvas.height - padding + 15);
+            ctx.fillText('1', padding - 10, padding + 10);
+            ctx.fillText('0', padding - 10, canvas.height - padding + 15);
+
+            // 绘制随机缓动函数曲线
+            ctx.beginPath();
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            ctx.moveTo(padding, canvas.height - padding);
+
+            // 生成 100 个点来绘制曲线
+            for (let i = 0; i <= 100; i++) {
+                const x = i / 100;
+                const y = randomEase(x);
+                
+                const canvasX = padding + x * graphWidth;
+                const canvasY = canvas.height - padding - y * graphHeight;
+                
+                if (i === 0) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+
+            ctx.stroke();
+
+            // 添加标签
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#3498db';
+            ctx.fillText('Random Easing Function', padding, padding / 2);
+        }
+
+        // 初始化
+        window.onload = drawRandomEasingCurve;
+    </script>
+</body>
+</html>
