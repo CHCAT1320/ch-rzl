@@ -78,21 +78,21 @@ function _1(x) {
 
 // easing functions array
 const easeFuncs = [
-    linear,
-    sineIn,
-    sineOut,
-    sineInOut,
-    quadIn,
-    quadOut,
-    quadInOut,
-    cubicIn,
-    cubicOut,
-    cubicInOut,
-    quartIn,
-    quartOut,
-    quartInOut,
-    _0,
-    _1
+    linear, // 0
+    sineIn, // 1
+    sineOut, // 2
+    sineInOut, // 3
+    quadIn, // 4
+    quadOut, // 5
+    quadInOut, // 6
+    cubicIn, // 7
+    cubicOut, // 8
+    cubicInOut, // 9
+    quartIn, // 10
+    quartOut, // 11
+    quartInOut, // 12
+    _0, // 13
+    _1 // 14
 ];
 
 // linear interpolation

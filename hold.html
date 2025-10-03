@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边框从中间位置开始渐变的矩形</title>
+</head>
+<body style="margin: 0;">
+    <canvas id="gradientCanvas" width="720" height="540"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gradientCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 清除画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 定义矩形位置和尺寸
+        const x = 120;        // 水平位置
+        const y = 80;         // 垂直位置
+        const width = 80    // 宽度
+        const height = 360;   // 高度
+        const midY = y + height / 2; // 矩形高度一半的位置
+        const quarterY = y + height / 16; // 矩形高度1/4的位置
+        
+        // 填充渐变：1/32处开始变透明（早透明）
+        const fillGradient = ctx.createLinearGradient(x, quarterY, x, midY);
+        fillGradient.addColorStop(0, 'rgba(52, 152, 219, 0)');      // 1/32处: 完全透明
+        fillGradient.addColorStop(1, 'rgba(52, 152, 219, 1)');      // 中间位置: 完全不透明
+        
+        // 边框渐变：从中间位置开始向上渐变（恢复为从一半处开始）
+        const borderGradient = ctx.createLinearGradient(x, y, x, midY);
+        borderGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');        // 顶部: 完全透明
+        borderGradient.addColorStop(1, 'rgba(0, 0, 0, 1)');        // 中间位置: 完全不透明
+        
+        // 绘制填充矩形
+        ctx.fillStyle = fillGradient;
+        ctx.fillRect(x, y, width, height);
+        
+        // 绘制边框
+        ctx.strokeStyle = borderGradient;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, width, height);
+    </script>
+</body>
+</html>

@@ -7,3 +7,10 @@
     left: 50%;
     transform: translate(-50%, -50%); */
 }
+@font-face {
+    font-family: "rizline";
+    src: url("../fonts/rizline.ttf");
+}
+* {
+    font-family: "rizline";
+}
