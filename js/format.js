@@ -631,7 +631,7 @@ class note {
         return [this.points[targetIndex], this.points[targetIndex + 1] || this.points[targetIndex]];//.xPosition * cameraScale(tick) * cvs.width + canvasI[this.points[targetIndex].canvasIndex].x;
     }
     drawNote(tick) {
-        if (this.isHit === true && this.info.type!== 2) return;
+        if (this.isHit === true && tick > this.info.time && this.info.type!== 2) return;
         if (this.isHit === true && this.info.type === 2 && tick >= this.otherInformations[0] + 0.5) return;
         // this.findedPoints = this.findPoint(this.info.time)
         const point = this.findedPoints[0];
@@ -823,6 +823,11 @@ function start() {
         for (let i = 0; i < hitI.length; i++) {
             if (timer > hitI[i].timer + 0.5) {
                 hitI.splice(i, 1);
+                i--;
+                continue
+            }
+            if (timer < hitI[i].timer - 0.5) {
+                hitI.slice(i, 1);
                 i--;
                 continue
             }
