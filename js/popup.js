@@ -12,6 +12,9 @@ function showPopup(e, type) {
     } else if (type === "info") {
         popup.style.backgroundColor = "rgb(0, 162, 255)";
         popup.innerText = e;
+    } else if (type === "warn") {
+        popup.style.backgroundColor = "rgb(255, 255, 0)";
+        popup.innerText = "警告：" + e;
     }
     popup.style.color = "white";
     popup.style.padding = "10px";

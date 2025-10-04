@@ -101,6 +101,13 @@ function loadFormatJs(){
         console.log("format.js加载成功")
     }
     document.head.appendChild(formatJs);
+    const formatCheckJs = document.createElement("script");
+    formatCheckJs.src = "js/formatCheck.js";
+    formatCheckJs.onload = function(){
+        console.log("formatCheck.js加载成功")
+        checkFormatChart();
+    }
+    document.head.appendChild(formatCheckJs);
 }
 
 function chartFiles(files){

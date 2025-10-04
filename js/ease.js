@@ -76,6 +76,16 @@ function _1(x) {
     return 1;
 }
 
+function circIn(x) {
+    return 1 - Math.sqrt(1 - x ** 2)
+}
+
+function circOut(x) {
+    return Math.sqrt(1 - Math.pow(x - 1, 2))
+}
+
+
+
 // easing functions array
 const easeFuncs = [
     linear, // 0
@@ -92,7 +102,9 @@ const easeFuncs = [
     quartOut, // 11
     quartInOut, // 12
     _0, // 13
-    _1 // 14
+    _1, // 14
+    circIn, // 15
+    circOut, // 16
 ];
 
 // linear interpolation

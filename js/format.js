@@ -529,12 +529,12 @@ class line {
         const stepCount = 16;
         const step = 1 / stepCount;
         for (let t = 0; t < 1; t += step) {
-            try {
-                easeFuncs[points[0].easeType](t);
-            }catch(e){
-                console.log(`不支持的缓动：${points[0].easeType}`, "位于：", points[0], "将视为0")
-                points[0].easeType = 0
-            }
+            // try {
+            //     easeFuncs[points[0].easeType](t);
+            // }catch(e){
+            //     console.log(`不支持的缓动：${points[0].easeType}`, "位于：", points[0], "将视为0")
+            //     points[0].easeType = 0
+            // }
             const ease = easeFuncs[points[0].easeType](t);
             const x = x1 + ease * (x2 - x1);
             const y = y1 + t * (y2 - y1);
@@ -696,7 +696,7 @@ class note {
         const otherInformations = this.otherInformations;
         const endFp = otherInformations[2] //findSpeedValue(otherInformations[0], canvasI[otherInformations[1]].sK);
         const endY = (endFp - canvasI[otherInformations[1]].fp) * cvs.height * speed * scale;
-        const h = -(endY - y) * speed * scale * 7.5;
+        const h = -(endY - y) * speed * scale * 6.5;
         const w = 10 * scale;
         const offset = w / 2;
         const offsetY = 10 * scale;
