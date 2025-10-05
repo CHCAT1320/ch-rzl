@@ -316,6 +316,12 @@ function getCurrentLineColor(lineColor, tick) {
   if (!lineColor || !Array.isArray(lineColor) || lineColor.length === 0) {
     return null;
   }
+  if (lineColor.length === 1) {
+    return lineColor[0].startColor;
+  }
+  if (tick >= lineColor[lineColor.length - 1].time) {
+    return lineColor[lineColor.length - 1].endColor;
+  }
 
   // 转换为时间片段结构
   const colorSegments = lineColor.map((segment, index) => {
@@ -392,6 +398,73 @@ function getRGBAString(color) {
     return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a / 255})`;
 }
 
+function calculateCombo(comb) {
+    if (comb === 0) return 0;
+    // 确保输入是正整数
+    // if (!Number.isInteger(comb) || comb < 1) {
+    //     throw new Error("comb必须是正整数");
+    // }
+    
+    if (comb <= 5) {
+        return comb;
+    } else if (comb >= 5 && comb <= 8) {
+        return 2 * comb - 5;
+    } else if (comb >= 8 && comb <= 11) {
+        return 3 * comb - 13;
+    } else { // comb >= 12
+        return 4 * comb - 24;
+    }
+}
+
+function drawCombo() {
+    let hitCount = 0;
+    for (let i = 0; i < noteI.length; i++) {
+        if (noteI[i].isHit) {
+            hitCount++;
+            if (noteI[i].info.type === 2) {
+                hitCount+=0.5
+            }
+        }
+    }
+    const combo = calculateCombo(hitCount);
+    if (combo === 0) return;
+    ctx.save();
+    ctx.font = "30px rizline";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
+    const comboWidth = ctx.measureText(combo.toString()).width
+    const x = cvs.width / 2 - comboWidth / 2 - 25;
+    const y = -cvs.height / 2 - 150;
+    ctx.strokeText(combo, x, y);
+    ctx.fillText(combo, x, y);
+    ctx.font = "20px rizline";
+    const comboTextWidth = ctx.measureText("CATPLAY").width
+    ctx.strokeText("CATPLAY", x - comboWidth / 2 - comboTextWidth / 2, y);
+    ctx.fillText("CATPLAY", x - comboWidth / 2 - comboTextWidth / 2, y);
+    ctx.restore();
+}
+// drawCombo();
+
+function drawShuiYin() {
+    const shuiYin = "CH-RZL Player VERSION 0.0.1 ALL CODE BY CHCAT1320"
+    ctx.save();
+    ctx.font = "10px rizline";
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.globalAlpha = 0.5;
+    const shuiYinWidth = ctx.measureText(shuiYin).width
+    const x = 0
+    const y = -cvs.height / 2 + 150;
+    ctx.fillText(shuiYin, x, y);
+    ctx.strokeText(shuiYin, x, y);
+    ctx.restore();
+}
+drawShuiYin()
     
 class canvas {
     constructor(index) {
@@ -448,8 +521,8 @@ class canvas {
     updated(tick) {
         this.x = (findValue(tick, this.xM) - cameraMoveX(tick)) * cameraScale(tick) * cvs.width;
         this.fp = this.speedToFP(tickToSeconds(tick))//findSpeedValue(tick, this.sK);
-        ctx.font = "20px rizline";
-        ctx.fillText(this.index, this.x, 20);
+        // ctx.font = "20px rizline";
+        // ctx.fillText(this.index, this.x, 20);
     }
 }
 
@@ -520,29 +593,66 @@ class line {
         // 避免绘制零长度线段
         if (x1 === x2 && y1 === y2) return;
         
+        // 参数验证
+        if (!points || points.length < 2 || !easeFuncs) return;
+        
+        const point0 = points[0];
+        const point1 = points[1];
+        const easeFunc = easeFuncs[point0.easeType] || easeFuncs[0];
+        
+        // 计算颜色差值，避免重复计算
+        const deltaR = point1.mixColor.r - point0.mixColor.r;
+        const deltaG = point1.mixColor.g - point0.mixColor.g;
+        const deltaB = point1.mixColor.b - point0.mixColor.b;
+        const deltaA = point1.mixColor.a - point0.mixColor.a;
+        
+        // 计算坐标差值
+        const deltaX = x2 - x1;
+        const deltaY = y2 - y1;
+        
         ctx.save();
         ctx.beginPath();
-        ctx.strokeStyle = getRGBAString(points[0].mixColor);
         ctx.moveTo(x1, y1);
         
         // 计算步长绘制曲线
         const stepCount = 16;
         const step = 1 / stepCount;
-        for (let t = 0; t < 1; t += step) {
-            // try {
-            //     easeFuncs[points[0].easeType](t);
-            // }catch(e){
-            //     console.log(`不支持的缓动：${points[0].easeType}`, "位于：", points[0], "将视为0")
-            //     points[0].easeType = 0
-            // }
-            const ease = easeFuncs[points[0].easeType](t);
-            const x = x1 + ease * (x2 - x1);
-            const y = y1 + t * (y2 - y1);
+        
+        // 缓存当前颜色和位置，减少状态切换
+        let currentR = point0.mixColor.r;
+        let currentG = point0.mixColor.g;
+        let currentB = point0.mixColor.b;
+        let currentA = point0.mixColor.a;
+        
+        // 使用缓存的差值进行计算，减少运算量
+        for (let t = step; t < 1; t += step) {
+            // 计算颜色
+            const colorEase = easeFuncs[0](t);
+            currentR = point0.mixColor.r + deltaR * colorEase;
+            currentG = point0.mixColor.g + deltaG * colorEase;
+            currentB = point0.mixColor.b + deltaB * colorEase;
+            currentA = point0.mixColor.a + deltaA * colorEase;
+            
+            // 计算位置
+            const posEase = easeFunc(t);
+            const x = x1 + posEase * deltaX;
+            const y = y1 + t * deltaY;
+            
             ctx.lineTo(x, y);
         }
         
+        // 最后一个点
         ctx.lineTo(x2, y2);
+        
+        // 设置线宽和绘制
         ctx.lineWidth = 3 * scale;
+        
+        // 创建渐变用于描边，提高性能
+        const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+        gradient.addColorStop(0, getRGBAString(point0.mixColor));
+        gradient.addColorStop(1, getRGBAString(point1.mixColor));
+        ctx.strokeStyle = gradient;
+        
         ctx.stroke();
         ctx.restore();
     }
@@ -657,8 +767,8 @@ class note {
             }
         }
         if (this.isHit === false && this.isPlayHit === false && tick >= this.info.time) {
-            playSound(this.info.type);
             hitI.push(new hit(tick, x))
+            playSound(this.info.type);
             this.isPlayHit = true;
         }
         if (tick < this.info.time) {
@@ -685,6 +795,17 @@ class note {
         if (this.info.type === 1) ctx.fillStyle = "white"
         ctx.strokeStyle = "black"
         ctx.lineWidth = 3 * scale;
+        if (tick > this.info.time) {
+            const point = this.findPoint(tick);
+            const point1 = point[0];
+            const point2 = point[1];
+            const canvas = canvasI[point1.canvasIndex];
+            const nextCanvas = canvasI[point2.canvasIndex];
+            const easeValue = easeFuncs[point1.easeType]((tick - point1.time) / (point2.time - point1.time))
+            const x1 = point1.xPosition * scale * cvs.width + canvas.x;
+            const x2 = point2.xPosition * scale * cvs.width + nextCanvas.x;
+            x = x1 + (easeValue * (x2 - x1));
+        }
         ctx.rect(x - offset, y - offset, wh, wh);
         ctx.fill();
         ctx.stroke();
@@ -692,37 +813,39 @@ class note {
         if (this.info.type === 2) this.drawHoldBody(tick, x, y, scale, color)
     }
     drawHoldBody(tick, x, y, scale, color) {
-        ctx.save();
-        const otherInformations = this.otherInformations;
-        const endFp = otherInformations[2] //findSpeedValue(otherInformations[0], canvasI[otherInformations[1]].sK);
-        const endY = (endFp - canvasI[otherInformations[1]].fp) * cvs.height * speed * scale;
-        const h = -(endY - y) * speed * scale * 6.5;
-        const w = 10 * scale;
-        const offset = w / 2;
-        const offsetY = 10 * scale;
-        const midY = y + h / 8;
-        const quarterY = y + h / 16;
-        if (tick >= otherInformations[0]) {
-            ctx.restore()
-            return
+        if (tick > this.otherInformations[0]) return;
+        if (tick > this.info.time) {
+            const point = this.findPoint(tick);
+            const point1 = point[0];
+            const point2 = point[1];
+            const canvas = canvasI[point1.canvasIndex];
+            const nextCanvas = canvasI[point2.canvasIndex];
+            const easeValue = easeFuncs[point1.easeType]((tick - point1.time) / (point2.time - point1.time))
+            const x1 = point1.xPosition * scale * cvs.width + canvas.x;
+            const x2 = point2.xPosition * scale * cvs.width + nextCanvas.x;
+            x = x1 + (easeValue * (x2 - x1));
         }
         
-        const fillGradient = ctx.createLinearGradient(x - offset, quarterY, x - offset, midY);
-        fillGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 1)`);
-        fillGradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+        ctx.save();
+        const otherInformations = this.otherInformations;
+        const endFp = findSpeedValue(otherInformations[0], canvasI[otherInformations[1]].sK);
+        let endY = 0;
         
-        const borderGradient = ctx.createLinearGradient(x - offset, y, x - offset, midY);
-        borderGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-        borderGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        
-        ctx.fillStyle = fillGradient;
-        ctx.fillRect(x - offset, y - offsetY, w, h);
-        
-        ctx.strokeStyle = borderGradient;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x - offset, y - offsetY, w, h);
+        endY = (canvasI[otherInformations[1]].fp - endFp) * cvs.height * speed * scale;
+        const h = endY - y; // 长条总长度
+        const w = 10 * scale; // 宽度
+        const offset = w / 2; // X轴偏移量
+        const offsetY = 10 * scale; // Y轴偏移量
+
+        ctx.rect(x - offset, y - offsetY, w, h);
+        ctx.fillStyle = getRGBAString(color);
+        ctx.strokeStyle = "black"
+        ctx.lineWidth = 3 * scale;
+        ctx.fill();
+        ctx.stroke();
         ctx.restore();
     }
+    
     getHoldHeadScale(tick, type) {
         if (type !== 2) return 1
         const otherInformations = this.otherInformations;
@@ -756,18 +879,20 @@ class hit {
             this.blocksD.push(1)
             this.blockS.push(Math.floor(Math.random() * 21) + 10)
         }
+        this.t = 0
     }
     draw(tick) {
         ctx.save();
         ctx.beginPath();
         const scale = cameraScale(tick)
         const timer = tickToSeconds(tick)
-        const easeValue = easeFuncs[11]((timer - this.timer) / 0.5)
-        this.size = 100 * easeValue
+        this.t = (timer - this.timer) / 0.5
+        const easeValue = easeFuncs[11](this.t)
+        this.size = 30 + 70 * easeValue
         // this.color.a = 255 - (255 * easeValue)
         // this.colorStr = getRGBAString(this.color)
         ctx.strokeStyle = this.colorStr
-        ctx.lineWidth = 40 - (40 * easeValue) * scale
+        ctx.lineWidth = (30 - (30 * easeValue)) * scale
         ctx.rect(this.x - (this.size * scale) / 2, 0 - (this.size * scale) / 2, this.size * scale, this.size * scale);
         ctx.stroke()
         ctx.restore();
@@ -778,10 +903,10 @@ class hit {
             const angle = this.blocksR[i] * Math.PI / 180
             const wh = this.blockS[i] * scale
             const offset = wh / 2
-            const blockOffset = easeFuncs[11]((tickToSeconds(tick) - this.timer) / 0.5) * 100 * scale
+            const blockOffset = easeFuncs[11](this.t) * 100 * scale
             const x1 = x + blockOffset * Math.cos(angle) - offset
             const y1 = y + blockOffset * Math.sin(angle) - offset
-            const blockSizeAndD = easeFuncs[10]((tickToSeconds(tick) - this.timer) / 0.5)
+            const blockSizeAndD = easeFuncs[10](this.t)
             color.a = 255 - (255 * blockSizeAndD)
             ctx.save();
             ctx.beginPath();
@@ -826,13 +951,15 @@ function start() {
                 i--;
                 continue
             }
-            if (timer < hitI[i].timer - 0.5) {
-                hitI.slice(i, 1);
+            if (hitI[i].t < 0) {
+                hitI.splice(i, 1);
                 i--;
                 continue
             }
             hitI[i].draw(tick);
         }
+        drawCombo();
+        drawShuiYin()
         // 更新 FPS
         const now = performance.now();
         frameCount++;

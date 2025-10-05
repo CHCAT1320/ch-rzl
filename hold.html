@@ -1,46 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>边框从中间位置开始渐变的矩形</title>
+    <title>仅渐变矩形</title>
+    <style>
+        body { 
+            margin: 0; 
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+    </style>
 </head>
-<body style="margin: 0;">
-    <canvas id="gradientCanvas" width="720" height="540"></canvas>
+<body>
+    <!-- 仅保留渐变矩形的Canvas -->
+    <canvas id="gradientCanvas" width="20" height="200"></canvas>
 
     <script>
-        const canvas = document.getElementById('gradientCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // 清除画布
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 定义矩形位置和尺寸
-        const x = 120;        // 水平位置
-        const y = 80;         // 垂直位置
-        const width = 80    // 宽度
-        const height = 360;   // 高度
-        const midY = y + height / 2; // 矩形高度一半的位置
-        const quarterY = y + height / 16; // 矩形高度1/4的位置
-        
-        // 填充渐变：1/32处开始变透明（早透明）
-        const fillGradient = ctx.createLinearGradient(x, quarterY, x, midY);
-        fillGradient.addColorStop(0, 'rgba(52, 152, 219, 0)');      // 1/32处: 完全透明
-        fillGradient.addColorStop(1, 'rgba(52, 152, 219, 1)');      // 中间位置: 完全不透明
-        
-        // 边框渐变：从中间位置开始向上渐变（恢复为从一半处开始）
-        const borderGradient = ctx.createLinearGradient(x, y, x, midY);
-        borderGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');        // 顶部: 完全透明
-        borderGradient.addColorStop(1, 'rgba(0, 0, 0, 1)');        // 中间位置: 完全不透明
-        
-        // 绘制填充矩形
-        ctx.fillStyle = fillGradient;
-        ctx.fillRect(x, y, width, height);
-        
-        // 绘制边框
-        ctx.strokeStyle = borderGradient;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, width, height);
+        // 1. 生成随机背景色
+        function getRandomBgColor() {
+            const r = Math.floor(Math.random() * 150) + 50;
+            const g = Math.floor(Math.random() * 150) + 50;
+            const b = Math.floor(Math.random() * 150) + 50;
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+        document.body.style.backgroundColor = getRandomBgColor();
+
+        // 2. 绘制渐变矩形
+        const gradCanvas = document.getElementById('gradientCanvas');
+        const gradCtx = gradCanvas.getContext('2d');
+        const rectFillColor = 'rgba(30, 144, 255, 1)';
+        const rectW = 20, rectH = 200;
+
+        // 渐变矩形填充
+        const fillGrad = gradCtx.createLinearGradient(0, 0, 0, rectH);
+        fillGrad.addColorStop(0, 'rgba(30, 144, 255, 0)');
+        fillGrad.addColorStop(2/3, rectFillColor);
+        fillGrad.addColorStop(1, rectFillColor);
+        gradCtx.fillStyle = fillGrad;
+        gradCtx.fillRect(0, 0, rectW, rectH);
+
+        // 渐变矩形边框（10px，上方透明→下方纯黑）
+        const borderGrad = gradCtx.createLinearGradient(0, 0, 0, rectH);
+        borderGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        borderGrad.addColorStop(3/4, 'rgba(0,0,0,1)');
+        borderGrad.addColorStop(1, 'rgba(0,0,0,1)');
+        gradCtx.strokeStyle = borderGrad;
+        gradCtx.lineWidth = 10;
+        gradCtx.strokeRect(0, 0, rectW, rectH);
     </script>
 </body>
 </html>
+    

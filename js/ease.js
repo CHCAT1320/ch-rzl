@@ -84,7 +84,18 @@ function circOut(x) {
     return Math.sqrt(1 - Math.pow(x - 1, 2))
 }
 
+function circInOut(x) {
+return x < 0.5
+  ? (1 - Math.sqrt(1 - Math.pow(2 * x, 2))) / 2
+  : (Math.sqrt(1 - Math.pow(-2 * x + 2, 2)) + 1) / 2;
+}
 
+// function expoIn(x) {
+// return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
+// }
+function expoOut(x) {
+return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+}
 
 // easing functions array
 const easeFuncs = [
@@ -105,6 +116,8 @@ const easeFuncs = [
     _1, // 14
     circIn, // 15
     circOut, // 16
+    circInOut, // 17
+    // expoOut, // 18
 ];
 
 // linear interpolation
