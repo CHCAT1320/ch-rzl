@@ -1,148 +1,123 @@
-const { pow, sin, cos, PI } = Math;
+const { pow, sin, cos, PI, sqrt } = Math;
 
-// easing functions
+// 1. 缓动函数定义（19个，严格匹配提供的列表）
 function linear(x) {
     return x;
 }
 
-function sineIn(x) {
-    return 1 - cos((x * PI) / 2);
+function easeInQuad(x) {
+    return x * x;
 }
 
-function sineOut(x) {
-    return sin((x * PI) / 2);
+function easeOutQuad(x) {
+    return 1 - (1 - x) * (1 - x);
 }
 
-function sineInOut(x) {
-    return (1 - cos(x * PI)) / 2;
+function easeInOutQuad(x) {
+    return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 }
 
-function quadIn(x) {
-    return pow(x, 2);
+function easeInCubic(x) {
+    return x * x * x;
 }
 
-function quadOut(x) {
-    return 1 - pow((1 - x), 2);
+function easeOutCubic(x) {
+    return 1 - Math.pow(1 - x, 3);
 }
 
-function quadInOut(x) {
-    x *= 2;
-    if (x < 1) {
-        return quadIn(x) / 2;
-    } else {
-        return (-(pow((x - 2), 2) - 2)) / 2;
-    }
+function easeInOutCubic(x) {
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
 
-function cubicIn(x) {
-    return pow(x, 3);
+function easeInQuart(x) {
+    return x * x * x * x;
 }
 
-function cubicOut(x) {
-    return 1 + pow((x - 1), 3);
+function easeOutQuart(x) {
+    return 1 - Math.pow(1 - x, 4);
 }
 
-function cubicInOut(x) {
-    x *= 2;
-    if (x < 1) {
-        return cubicIn(x) / 2;
-    } else {
-        return (pow((x - 2), 3) + 2) / 2;
-    }
+function easeInOutQuart(x) {
+    return x < 0.5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2;
 }
 
-function quartIn(x) {
-    return pow(x, 4);
+function easeInQuint(x) {
+    return x * x * x * x * x;
 }
 
-function quartOut(x) {
-    return 1 - pow((x - 1), 4);
+function easeOutQuint(x) {
+    return 1 - Math.pow(1 - x, 5);
 }
 
-function quartInOut(x) {
-    x *= 2;
-    if (x < 1) {
-        return quartIn(x) / 2;
-    } else {
-        return (-(pow((x - 2), 4) - 2)) / 2;
-    }
+function easeInOutQuint(x) {
+    return x < 0.5 ? 16 * x * x * x * x * x : 1 - Math.pow(-2 * x + 2, 5) / 2;
 }
 
-function _0(x) {
+function easeZero(x) {
     return 0;
 }
 
-function _1(x) {
+function easeOne(x) {
     return 1;
 }
 
-function circIn(x) {
-    return 1 - Math.sqrt(1 - x ** 2)
+function easeInCirc(x) {
+    return 1 - Math.sqrt(1 - Math.pow(x, 2));
 }
 
-function circOut(x) {
-    return Math.sqrt(1 - Math.pow(x - 1, 2))
+function easeOutCirc(x) {
+    return Math.sqrt(1 - Math.pow(x - 1, 2));
 }
 
-function circInOut(x) {
-return x < 0.5
-  ? (1 - Math.sqrt(1 - Math.pow(2 * x, 2))) / 2
-  : (Math.sqrt(1 - Math.pow(-2 * x + 2, 2)) + 1) / 2;
+function easeOutSine(x) {
+    return Math.sin((x * Math.PI) / 2);
 }
 
-// function expoIn(x) {
-// return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
-// }
-function expoOut(x) {
-return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+function easeInSine(x) {
+    return 1 - Math.cos((x * Math.PI) / 2);
 }
 
-// easing functions array
+// 2. 缓动函数数组（19个，索引0-18，严格匹配提供的顺序）
 const easeFuncs = [
-    linear, // 0
-    sineIn, // 1
-    sineOut, // 2
-    sineInOut, // 3
-    quadIn, // 4
-    quadOut, // 5
-    quadInOut, // 6
-    cubicIn, // 7
-    cubicOut, // 8
-    cubicInOut, // 9
-    quartIn, // 10
-    quartOut, // 11
-    quartInOut, // 12
-    _0, // 13
-    _1, // 14
-    circIn, // 15
-    circOut, // 16
-    circInOut, // 17
-    // expoOut, // 18
+    linear,          // 0: Linear
+    easeInQuad,      // 1: InQuad
+    easeOutQuad,     // 2: OutQuad
+    easeInOutQuad,   // 3: InOutQuad
+    easeInCubic,     // 4: InCubic
+    easeOutCubic,    // 5: OutCubic
+    easeInOutCubic,  // 6: InOutCubic
+    easeInQuart,     // 7: InQuart
+    easeOutQuart,    // 8: OutQuart
+    easeInOutQuart,  // 9: InOutQuart
+    easeInQuint,     // 10: InQuint
+    easeOutQuint,    // 11: OutQuint
+    easeInOutQuint,  // 12: InOutQuint
+    easeZero,        // 13: Zero
+    easeOne,         // 14: One
+    easeInCirc,      // 15: InCirc
+    easeOutCirc,     // 16: OutCirc
+    easeOutSine,     // 17: OutSine
+    easeInSine       // 18: InSine
 ];
 
-// linear interpolation
+// 3. 线性插值（保持原逻辑，确保缓动结果正确映射）
 function lerp(start, end, t) {
     return start + (end - start) * t;
 }
 
-// tween execute function
+// 4. 缓动执行函数（适配新的缓动函数数组，保留原参数以兼容调用）
 function tweenExecute(nowTime, startTime, endTime, start, end, easeType = 0, easeHead = 0, easeTail = 1) {
-    // calculate delta
-    const rdt = ((nowTime - startTime) / (endTime - startTime));
+    // 计算时间进度（处理时长为0的异常，避免NaN）
+    const duration = endTime - startTime;
+    const rdt = duration <= 0 ? 0 : (nowTime - startTime) / duration;
 
-    // if the easing is LINEAR, then return
     try {
-        if (easeType === 0) {
-            return lerp(start, end, rdt);
-        } else {
-            return lerp(start, end, easeFuncs[easeType](rdt));
-        }
+        // 根据指定的缓动类型计算进度，再执行插值
+        const t = easeFuncs[easeType](rdt);
+        return lerp(start, end, t);
     } catch (error) {
-        console.error(`Error! rdt:${rdt}`);
-        if (rdt < 0) {
-            return start;
-        } else {
-            return end;
-        }
+        console.error(`Ease calculation error! rdt: ${rdt}, error: ${error.message}`);
+        // 异常时返回边界值，保证函数稳定性
+        return rdt < 0 ? start : end;
     }
 }

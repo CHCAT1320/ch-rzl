@@ -14,3 +14,4 @@ inputRange.oninput = function() {
 }
 document.body.appendChild(inputRange);
 
+var revelationSize = 1

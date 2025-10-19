@@ -1,15 +1,16 @@
 const cvs = document.getElementById("playerCanvas");
-// const canvas = cvs
 const ctx = cvs.getContext("2d");
 cvs.width = 360;
 cvs.height = 640;
-ctx.translate(cvs.width / 2, cvs.height / 2 + 200);
+// cvs.width = 720;
+// cvs.height = 1280;
+ctx.translate(cvs.width / 2, cvs.height / 2 + 200 * (cvs.height / 640));
 
 var frameCount = 0;
 var lastTime = 0;
 
 // 创建音频上下文
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const audioContext = new window.AudioContext();
 var hitAudioBuffers = [];
 
 function preloadSounds() {
@@ -17,7 +18,8 @@ function preloadSounds() {
         const soundUrls = [
             'audio/hit.wav',
             'audio/drag.wav',
-            'audio/hit.wav'
+            'audio/hit.wav',
+            'audio/fresh.ogg',
         ];
         const sounds = [];
         let loadedCount = 0;
@@ -150,7 +152,7 @@ function bgmFiles(files){
         try{
             console.log("音乐文件")
             var audio = document.getElementById("bgm")
-            audio.src = URL.createObjectURL(file);
+            audio.src = e.target.result;
         }
         catch(error){
             console.log(error)
@@ -158,7 +160,7 @@ function bgmFiles(files){
 
     }
     // 调用readAsText并传入文件内容
-    reader.readAsText(file);
+    reader.readAsDataURL(file);
 }
 
 // function start(){

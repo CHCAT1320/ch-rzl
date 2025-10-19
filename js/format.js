@@ -2,6 +2,7 @@ var canvasI = []
 var lineI = []
 var noteI = []
 var hitI = []
+var msgH = []
 
 /**
  * 将秒数转换为 tick
@@ -224,7 +225,7 @@ function drawBackground(tick) {
         const color = themes[challengeTimesIndex].colorsList[0];
         ctx.beginPath();
         ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
-        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200, cvs.width, cvs.height);
+        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
         ctx.restore();
         return;
     }
@@ -232,10 +233,11 @@ function drawBackground(tick) {
     ctx.save();
     ctx.beginPath();
     ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
-    ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200, cvs.width, cvs.height);
+    ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
     ctx.restore();
 }
 function drawCover(tick) {
+    if (revelationSize !== 1) return;
     ctx.save();
     ctx.beginPath();
     const themes = chart.themes;
@@ -248,8 +250,8 @@ function drawCover(tick) {
             const color = themes[0].colorsList[0];
             ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + i + ")";
         }
-        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (170 + (30 * i)), cvs.width, 30);
-        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (230 - (30 * i)) + cvs.height - 70, cvs.width, 30);
+        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (170 * (cvs.height / 640) + (30 * i)), cvs.width, 30 * (cvs.height / 640));
+        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (230 * (cvs.height / 640) - (30 * i)) + cvs.height - 70 * (cvs.height / 640), cvs.width, 30 * (cvs.height / 640));
     }
     ctx.fill();
     ctx.restore();
@@ -258,7 +260,7 @@ function drawCover(tick) {
 function cameraScale(tick) {
     const scaleList = chart.cameraMove.scaleKeyPoints;
     const value = findValue(tick, scaleList);
-    return value;
+    return value * revelationSize
 }
 function cameraMoveX(tick) {
     const xPositionList = chart.cameraMove.xPositionKeyPoints;
@@ -301,7 +303,7 @@ function mixColor({ r: r1, g: g1, b: b1, a: a1 }, { r: r2, g: g2, b: b2, a: a2 }
     r: Math.round(r1 + (r2 - r1) * mixRatio), 
     g: Math.round(g1 + (g2 - g1) * mixRatio), 
     b: Math.round(b1 + (b2 - b1) * mixRatio), 
-    a: a1 
+    a: a1
   };
 }
 
@@ -400,11 +402,6 @@ function getRGBAString(color) {
 
 function calculateCombo(comb) {
     if (comb === 0) return 0;
-    // 确保输入是正整数
-    // if (!Number.isInteger(comb) || comb < 1) {
-    //     throw new Error("comb必须是正整数");
-    // }
-    
     if (comb <= 5) {
         return comb;
     } else if (comb >= 5 && comb <= 8) {
@@ -419,28 +416,33 @@ function calculateCombo(comb) {
 function drawCombo() {
     let hitCount = 0;
     for (let i = 0; i < noteI.length; i++) {
+        // if (noteI[i].isBad !== false && noteI[i].isHit) {
+        //     hitCount = 0
+        //     continue
+        // }
         if (noteI[i].isHit) {
             hitCount++;
             if (noteI[i].info.type === 2) {
-                hitCount+=0.5
+                hitCount++
             }
         }
     }
+    hitCount = hitCount
     const combo = calculateCombo(hitCount);
     if (combo === 0) return;
     ctx.save();
-    ctx.font = "30px rizline";
+    ctx.font = `${30 * (cvs.width / 360)}px rizline`;
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.strokeStyle = "white";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 * (cvs.width / 360);
     const comboWidth = ctx.measureText(combo.toString()).width
-    const x = cvs.width / 2 - comboWidth / 2 - 25;
-    const y = -cvs.height / 2 - 150;
+    const x = cvs.width / 2 - comboWidth / 2 - 25 * (cvs.width / 360);
+    const y = -cvs.height / 2 - 150 * (cvs.height / 640);
     ctx.strokeText(combo, x, y);
     ctx.fillText(combo, x, y);
-    ctx.font = "20px rizline";
+    ctx.font = `${20 * (cvs.width / 360)}px rizline`;
     const comboTextWidth = ctx.measureText("CATPLAY").width
     ctx.strokeText("CATPLAY", x - comboWidth / 2 - comboTextWidth / 2, y);
     ctx.fillText("CATPLAY", x - comboWidth / 2 - comboTextWidth / 2, y);
@@ -449,9 +451,13 @@ function drawCombo() {
 // drawCombo();
 
 function drawShuiYin() {
-    const shuiYin = "CH-RZL Player VERSION 0.0.1 ALL CODE BY CHCAT1320"
     ctx.save();
-    ctx.font = "10px rizline";
+    ctx.font = `${9 * (cvs.width / 360)}px rizline`;
+    let shuiYin = "CHART REVELATION : CH-RZL Player VERSION 0.1.1 ALL CODE BY CHCAT1320"
+    if (revelationSize === 1) {
+        ctx.font = `${12 * (cvs.width / 360)}px rizline`;
+        shuiYin = "CH-RZL Player VERSION 0.1.1 ALL CODE BY CHCAT1320"
+    }
     ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
     ctx.textAlign = "center";
@@ -459,12 +465,23 @@ function drawShuiYin() {
     ctx.globalAlpha = 0.5;
     const shuiYinWidth = ctx.measureText(shuiYin).width
     const x = 0
-    const y = -cvs.height / 2 + 150;
+    const y = -cvs.height / 2 + 150 * (cvs.height / 640);
     ctx.fillText(shuiYin, x, y);
     ctx.strokeText(shuiYin, x, y);
     ctx.restore();
 }
 drawShuiYin()
+
+function drawScreenBoard() {
+    if (revelationSize === 1) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(255, 0, 0, 1)";
+    ctx.rect(-cvs.width / 2 * revelationSize, -cvs.height / 2 * revelationSize - 200 * (cvs.height / 640) * revelationSize, cvs.width * revelationSize, cvs.height * revelationSize);
+    ctx.stroke();
+    ctx.restore();
+}
+drawScreenBoard()
     
 class canvas {
     constructor(index) {
@@ -521,8 +538,9 @@ class canvas {
     updated(tick) {
         this.x = (findValue(tick, this.xM) - cameraMoveX(tick)) * cameraScale(tick) * cvs.width;
         this.fp = this.speedToFP(tickToSeconds(tick))//findSpeedValue(tick, this.sK);
-        // ctx.font = "20px rizline";
-        // ctx.fillText(this.index, this.x, 20);
+        if (revelationSize === 1) return;
+        ctx.font = `${20 * cameraScale(tick) * (cvs.width / 360)}px rizline`;
+        ctx.fillText(this.index, this.x, 20);
     }
 }
 
@@ -557,6 +575,15 @@ class line {
             
             // 更新颜色
             point.mixColor = calculateMixedColor(tick, point.color, this.info.lineColor);
+
+            if (revelationSize !== 1){
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y, 5 * scale * (cvs.width / 360), 0, 2 * Math.PI);
+                ctx.fillStyle = "black"
+                ctx.fill();
+                ctx.restore();
+            }
             
             // 获取下一个点
             const nextPoint = this.points[i + 1];
@@ -579,8 +606,8 @@ class line {
                 // 超出可视区域则跳过
                 if (y1 > 640) continue;
                 
-                this.drawLine(tick, [point, nextPoint], x, x1, y, y1, scale);
-                this.drawJudgeCircle(tick, [point, nextPoint], x, x1, scale);
+                this.drawLine(tick, [point, nextPoint], x, x1, y, y1, scale * (cvs.width / 360));
+                this.drawJudgeCircle(tick, [point, nextPoint], x, x1, scale * (cvs.width / 360));
             } else {
                 // 单个点的绘制
                 this.drawLine(tick, [point, point], x, x, y, y, scale);
@@ -720,6 +747,7 @@ class note {
         this.otherInformations = info.otherInformations;
         this.isHit = false;
         this.isPlayHit = false;
+        this.isBad =false// Math.random() < 0.1;
     }
     findPoint(tick) {
         let left = 0;
@@ -767,8 +795,9 @@ class note {
             }
         }
         if (this.isHit === false && this.isPlayHit === false && tick >= this.info.time) {
-            hitI.push(new hit(tick, x))
-            playSound(this.info.type);
+            hitI.push(new hit(tick, x, this.isBad))
+            if (!this.isBad) playSound(this.info.type);
+            msgBoxI.push(new msgBox(tickToSeconds(tick), -cvs.height / 2 - 200))
             this.isPlayHit = true;
         }
         if (tick < this.info.time) {
@@ -789,12 +818,12 @@ class note {
         }else {
             color = chart.themes[challengeTimeIndex].colorsList[1]
         }
-        const wh = 20 * scale * this.getHoldHeadScale(tick, this.info.type)
+        const wh = 20 * scale * this.getHoldHeadScale(tick, this.info.type) * (cvs.width / 360)
         const offset = wh / 2;
         ctx.fillStyle = getRGBAString(color);
         if (this.info.type === 1) ctx.fillStyle = "white"
         ctx.strokeStyle = "black"
-        ctx.lineWidth = 3 * scale;
+        ctx.lineWidth = 3 * scale * (cvs.width / 360);
         if (tick > this.info.time) {
             const point = this.findPoint(tick);
             const point1 = point[0];
@@ -833,14 +862,14 @@ class note {
         
         endY = (canvasI[otherInformations[1]].fp - endFp) * cvs.height * speed * scale;
         const h = endY - y; // 长条总长度
-        const w = 10 * scale; // 宽度
+        const w = 10 * scale * (cvs.width / 360); // 宽度
         const offset = w / 2; // X轴偏移量
-        const offsetY = 10 * scale; // Y轴偏移量
+        const offsetY = 10 * scale * (cvs.height / 640); // Y轴偏移量
 
         ctx.rect(x - offset, y - offsetY, w, h);
         ctx.fillStyle = getRGBAString(color);
         ctx.strokeStyle = "black"
-        ctx.lineWidth = 3 * scale;
+        ctx.lineWidth = 3 * scale * (cvs.width / 360);
         ctx.fill();
         ctx.stroke();
         ctx.restore();
@@ -858,7 +887,7 @@ class note {
 }
 
 class hit {
-    constructor(tick, x) {
+    constructor(tick, x, isBad) {
         this.x = x;
         this.timer = tickToSeconds(tick)
         const challengeTimeIndex = getChallengeTimeIndex(tick)
@@ -868,6 +897,7 @@ class hit {
             this.color = chart.themes[challengeTimeIndex].colorsList[2]
         }
         this.colorStr = getRGBAString(this.color)
+        if (isBad) this.colorStr = "black"
         this.size = 0
         this.lineWidth = 0
         this.blockCount = Math.floor(Math.random() * 2) + 3
@@ -888,11 +918,11 @@ class hit {
         const timer = tickToSeconds(tick)
         this.t = (timer - this.timer) / 0.5
         const easeValue = easeFuncs[11](this.t)
-        this.size = 30 + 70 * easeValue
+        this.size = 30 + 70 * easeValue * (cvs.width / 360)
         // this.color.a = 255 - (255 * easeValue)
         // this.colorStr = getRGBAString(this.color)
         ctx.strokeStyle = this.colorStr
-        ctx.lineWidth = (30 - (30 * easeValue)) * scale
+        ctx.lineWidth = (30 - (30 * easeValue)) * scale * (cvs.width / 360)
         ctx.rect(this.x - (this.size * scale) / 2, 0 - (this.size * scale) / 2, this.size * scale, this.size * scale);
         ctx.stroke()
         ctx.restore();
@@ -901,9 +931,9 @@ class hit {
     drawBlock(tick, x, y, scale, color) {
         for (let i = 0; i < this.blockCount; i++) {
             const angle = this.blocksR[i] * Math.PI / 180
-            const wh = this.blockS[i] * scale
+            const wh = this.blockS[i] * scale * (cvs.width / 360)
             const offset = wh / 2
-            const blockOffset = easeFuncs[11](this.t) * 100 * scale
+            const blockOffset = easeFuncs[11](this.t) * 100 * scale * (cvs.width / 360)
             const x1 = x + blockOffset * Math.cos(angle) - offset
             const y1 = y + blockOffset * Math.sin(angle) - offset
             const blockSizeAndD = easeFuncs[10](this.t)
@@ -930,8 +960,52 @@ function start() {
         }
     }
     audio.play();
+    const data = {
+        type: "audio",
+        data: audio.src
+    }
+    const ws = new WebSocket('ws://localhost:8085');
+    ws.onopen = () => {
+        console.log('ws open')
+        ws.send(JSON.stringify(data))
+        const hitData = []
+        for (let i = 0; i < noteI.length; i++) {
+            const note = noteI[i]
+            hitData.push({
+                type: note.info.type,
+                time: tickToSeconds(note.info.time),
+            })
+        }
+        hitData.sort((a, b) => a.time - b.time)
+        data.type = "hit"
+        data.data = hitData
+        ws.send(JSON.stringify(data))
+        data.type = "screen"
+        data.data = cvs.toDataURL()
+        ws.send(JSON.stringify(data))
+    }
+    function recorder() {
+        ws.onmessage = (e) => {
+            if (e.data === "ok") {
+                data.type = "screen"
+                data.data = cvs.toDataURL()
+                ws.send(JSON.stringify(data))
+                audio.currentTime = audio.currentTime + 1 / 60;
+            }
+        }
+        if (audio.currentTime >= audio.duration) {
+            data.type = "msgH"
+            data.data = msgH
+            ws.send(JSON.stringify(data))
+            data.type = "msg"
+            data.data = "stop"
+            ws.send(JSON.stringify(data))
+            // ws.close()
+            return
+        }
+    }
     function update() {
-        ctx.clearRect(-cvs.width / 2, -cvs.height / 2 - 200, cvs.width, cvs.height);
+        ctx.clearRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
         const timer = audio.currentTime;
         const tick = secondsToTick(timer);
         drawBackground(tick);
@@ -959,7 +1033,33 @@ function start() {
             hitI[i].draw(tick);
         }
         drawCombo();
+        drawScreenBoard()
         drawShuiYin()
+        for (let i = 0; i < msgBoxI.length; i++) {
+            // if (msgBoxI[i].show = false) {
+            //     msgBoxI.splice(i, 1);
+            //     i--;
+            //     continue
+            // }
+            if (timer > msgBoxI[i].time + msgBoxI[i].holdTime + msgBoxI[i].transitionTime) {
+                msgBoxI.splice(i, 1);
+                i--;
+                continue
+            }
+            for (let j = i + 1; j < msgBoxI.length; j++) {
+                if (msgBoxI[j].show === false) continue;
+                if (msgBoxI[j].show === true) {
+                    msgBoxI[i].holdTime = 0
+                    // msgBoxI[i].draw(timer + (timer - msgBoxI[i].time - msgBoxI[i].holdTime));
+                    break;
+                }else {
+                    // msgBoxI[i].draw(timer);
+                    break;
+                }
+            }
+            msgBoxI[i].draw(timer);
+        }
+        // recorder()
         // 更新 FPS
         const now = performance.now();
         frameCount++;
