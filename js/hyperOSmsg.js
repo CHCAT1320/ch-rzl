@@ -18,9 +18,9 @@ class msgBox {
         this.height = 60 * (cvs.height / 640);
         this.radius = 23 * (cvs.width / 360); // 圆角半径设为15px（可根据需要调整），小于高度的一半
         this.show = Math.random() > 0.7
-        console.log(this.show)
+        // console.log(this.show)
         if (this.show) {
-            playSound(3)
+            // playSound(3)
             msgH.push({type: 3, time: time})
         }
         this.msgIndex = Math.floor(Math.random() * msg.length)

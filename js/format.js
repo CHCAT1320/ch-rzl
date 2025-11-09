@@ -3,6 +3,8 @@ var lineI = []
 var noteI = []
 var hitI = []
 var msgH = []
+var autoHandData = []
+var autoHandDataTemp = 0
 
 /**
  * 将秒数转换为 tick
@@ -250,8 +252,9 @@ function drawCover(tick) {
             const color = themes[0].colorsList[0];
             ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + i + ")";
         }
-        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (170 * (cvs.height / 640) + (30 * i)), cvs.width, 30 * (cvs.height / 640));
-        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (230 * (cvs.height / 640) - (30 * i)) + cvs.height - 70 * (cvs.height / 640), cvs.width, 30 * (cvs.height / 640));
+        let times = 30 * (cvs.height / 640)
+        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (170 * (cvs.height / 640) + (times * i)), cvs.width, 30 * (cvs.height / 640));
+        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - (230 * (cvs.height / 640) - (times * i)) + cvs.height - 70 * (cvs.height / 640), cvs.width, 30 * (cvs.height / 640));
     }
     ctx.fill();
     ctx.restore();
@@ -436,7 +439,7 @@ function drawCombo() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.strokeStyle = "white";
-    ctx.lineWidth = 1 * (cvs.width / 360);
+    ctx.lineWidth = 2 * (cvs.width / 360);
     const comboWidth = ctx.measureText(combo.toString()).width
     const x = cvs.width / 2 - comboWidth / 2 - 25 * (cvs.width / 360);
     const y = -cvs.height / 2 - 150 * (cvs.height / 640);
@@ -462,11 +465,12 @@ function drawShuiYin() {
     ctx.strokeStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 1;
     const shuiYinWidth = ctx.measureText(shuiYin).width
     const x = 0
     const y = -cvs.height / 2 + 150 * (cvs.height / 640);
     ctx.fillText(shuiYin, x, y);
+    ctx.lineWidth =0.5 * (cvs.width / 360);
     ctx.strokeText(shuiYin, x, y);
     ctx.restore();
 }
@@ -604,7 +608,7 @@ class line {
                 nextPoint.mixColor = calculateMixedColor(nextPoint.time, nextPoint.color, this.info.lineColor);
                 
                 // 超出可视区域则跳过
-                if (y1 > 640) continue;
+                if (y1 > cvs.height) continue;
                 
                 this.drawLine(tick, [point, nextPoint], x, x1, y, y1, scale * (cvs.width / 360));
                 this.drawJudgeCircle(tick, [point, nextPoint], x, x1, scale * (cvs.width / 360));
@@ -798,6 +802,8 @@ class note {
             hitI.push(new hit(tick, x, this.isBad))
             if (!this.isBad) playSound(this.info.type);
             msgBoxI.push(new msgBox(tickToSeconds(tick), -cvs.height / 2 - 200))
+            screenShortI.push(new screenShort(tickToSeconds(tick), -200))
+            autoHandData.push(x)
             this.isPlayHit = true;
         }
         if (tick < this.info.time) {
@@ -948,6 +954,21 @@ class hit {
     }
 }
 
+function drawAutoHand(){
+    if (isDrawAutoHand === false) return
+    ctx.save();
+    ctx.beginPath();
+    ctx.font = `${50 * (cvs.width / 360)}px Arial`;
+    // const scale = cameraScale(tick)
+    const x = autoHandData[0] ?? autoHandDataTemp
+    autoHandDataTemp = autoHandData[0] ?? autoHandDataTemp
+    const y = 0
+    ctx.fillText("🖕", x - ctx.measureText("🖕").width / 2, y + ctx.measureText("🖕").actualBoundingBoxAscent / 2)
+    ctx.restore();
+    autoHandData.splice(0, 1)
+
+}
+
 function start() {
     const audio = document.getElementById("bgm");
     for (let i = 0; i < chart.canvasMoves.length; i++) {
@@ -956,7 +977,14 @@ function start() {
     for (let i = 0; i < chart.lines.length; i++) {
         lineI.push(new line(i, chart.lines[i]));
         for (let j = 0; j < chart.lines[i].notes.length; j++) {
-            noteI.push(new note(j, chart.lines[i].notes[j], chart.lines[i]));
+            for (let k = 0; k < 1; k++) {
+                const noteJ = chart.lines[i].notes[j]
+                if (noteJ.otherInformations !== undefined && noteJ.otherInformations.length !== 0){
+                   noteJ.otherInformations[0] = noteJ.otherInformations[0]// + (0.01*k)
+                }
+                noteJ.time = noteJ.time// + (0.01*k)
+                noteI.push(new note(j, noteJ, chart.lines[i]));
+            }
         }
     }
     audio.play();
@@ -964,9 +992,12 @@ function start() {
         type: "audio",
         data: audio.src
     }
+    const recorderDiv = document.getElementById("recorder")
     const ws = new WebSocket('ws://localhost:8085');
     ws.onopen = () => {
         console.log('ws open')
+        cvs.style.display = "none"
+        recorderDiv.innerText = "解析音频中..."
         ws.send(JSON.stringify(data))
         const hitData = []
         for (let i = 0; i < noteI.length; i++) {
@@ -979,6 +1010,7 @@ function start() {
         hitData.sort((a, b) => a.time - b.time)
         data.type = "hit"
         data.data = hitData
+        recorderDiv.innerText = "混合音效中..."
         ws.send(JSON.stringify(data))
         data.type = "screen"
         data.data = cvs.toDataURL()
@@ -987,6 +1019,7 @@ function start() {
     function recorder() {
         ws.onmessage = (e) => {
             if (e.data === "ok") {
+                recorderDiv.innerText = "正在渲染" + (audio.currentTime / audio.duration * 100).toFixed(2) + "%"
                 data.type = "screen"
                 data.data = cvs.toDataURL()
                 ws.send(JSON.stringify(data))
@@ -994,13 +1027,17 @@ function start() {
             }
         }
         if (audio.currentTime >= audio.duration) {
-            data.type = "msgH"
-            data.data = msgH
-            ws.send(JSON.stringify(data))
+            // data.type = "msgH"
+            // data.data = msgH
+            // ws.send(JSON.stringify(data))
             data.type = "msg"
             data.data = "stop"
             ws.send(JSON.stringify(data))
+            recorderDiv.innerText = "渲染完成"
             // ws.close()
+        }
+        ws.onclose = () => {
+            console.log('ws closed')
             return
         }
     }
@@ -1036,11 +1073,6 @@ function start() {
         drawScreenBoard()
         drawShuiYin()
         for (let i = 0; i < msgBoxI.length; i++) {
-            // if (msgBoxI[i].show = false) {
-            //     msgBoxI.splice(i, 1);
-            //     i--;
-            //     continue
-            // }
             if (timer > msgBoxI[i].time + msgBoxI[i].holdTime + msgBoxI[i].transitionTime) {
                 msgBoxI.splice(i, 1);
                 i--;
@@ -1050,15 +1082,31 @@ function start() {
                 if (msgBoxI[j].show === false) continue;
                 if (msgBoxI[j].show === true) {
                     msgBoxI[i].holdTime = 0
-                    // msgBoxI[i].draw(timer + (timer - msgBoxI[i].time - msgBoxI[i].holdTime));
                     break;
                 }else {
-                    // msgBoxI[i].draw(timer);
                     break;
                 }
             }
             msgBoxI[i].draw(timer);
         }
+        for (let i = 0; i < screenShortI.length; i++) {
+            if (timer > screenShortI[i].time + screenShortI[i].holdTime + screenShortI[i].transitionTime) {
+                screenShortI.splice(i, 1);
+                i--;
+                continue
+            }
+            for (let j = i + 1; j < screenShortI.length; j++) {
+                if (screenShortI[j].show === false) continue;
+                if (screenShortI[j].show === true) {
+                    screenShortI[i].holdTime = 0
+                    break;
+                }else {
+                    break;
+                }
+            }
+            screenShortI[i].draw(timer);
+        }
+        // drawAutoHand()
         // recorder()
         // 更新 FPS
         const now = performance.now();

@@ -1,9 +1,13 @@
 const cvs = document.getElementById("playerCanvas");
 const ctx = cvs.getContext("2d");
-cvs.width = 360;
-cvs.height = 640;
+// cvs.width = 360;
+// cvs.height = 640;
 // cvs.width = 720;
 // cvs.height = 1280;
+// cvs.width = 2160;
+// cvs.height = 3840;
+cvs.width = 1080;
+cvs.height = 1920;
 ctx.translate(cvs.width / 2, cvs.height / 2 + 200 * (cvs.height / 640));
 
 var frameCount = 0;
