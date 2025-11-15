@@ -25,7 +25,8 @@ async def handle(websocket):
             ffmpegPath, "-y",
             "-f", "rawvideo",          # 裸数据
             "-vcodec", "rawvideo",     # 显式指定 raw 解码器（可省）
-            "-pixel_format", "rgb24",   # 每像素 5 字节
+            # "-pixel_format", "rgb24",   # 每像素 5 字节
+            "-pixel_format", "rgba",   # 每像素 5 字节 # shut the fuck up
             "-video_size", "1080x1920",# 宽 x 高
             "-framerate", "60",
             "-thread_queue_size", "512", # 防止 pipe 阻塞
@@ -42,7 +43,7 @@ async def handle(websocket):
             "../output.mp4"
         ],
         stdin=subprocess.PIPE,
-        bufsize=1024*1024*16  # 增大缓冲区到4MB，减少IO阻塞 # shut the fuck up
+        bufsize=1024*1024*32  # 增大缓冲区到32MB，减少IO阻塞 # shut the fuck up
     )
     
     # 音频混合器实例（全局复用，避免重复初始化）

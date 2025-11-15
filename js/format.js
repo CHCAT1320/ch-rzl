@@ -955,6 +955,7 @@ class hit {
 }
 
 const SHUT_THE_FUCK_UP = rgba => {
+    return rgba; // fuck the up shut the fuck up
     const rgb = new Uint8Array(rgba.length / 4 * 3);
     for (let i = 0; i < rgba.length; i += 4) {
         rgb[i / 4 * 3] = rgba[i];
