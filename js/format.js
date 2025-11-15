@@ -1036,18 +1036,19 @@ function start() {
             ws.send(JSON.stringify(data))
             // recorderDiv.innerText = "发送完成"
             const time2 = new Date()
-            const diff = time1 - time2
+            const diff = Math.abs(time1 - time2)
             const h = Math.floor(diff / 3600000).toString().padStart(2, '0')
             const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
             const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
             const ms = Math.floor(diff % 1000).toString().padStart(3, '0')
             recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
+            return
             // ws.close()
         }
         ws.onclose = () => {
             console.log('ws closed')
             const time2 = new Date()
-            const diff = time1 - time2
+            const diff = Math.abs(time1 - time2)
             const h = Math.floor(diff / 3600000).toString().padStart(2, '0')
             const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
             const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
