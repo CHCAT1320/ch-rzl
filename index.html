@@ -8,6 +8,7 @@
 </head>
 <body>
     <div id="body">
+        <h1>CH-RZL Player</h1>
         <input type="file" onchange="chartFiles(this.files)">
         <input type="file" onchange="bgmFiles(this.files)">
         <p id="fps"></p>
@@ -15,7 +16,7 @@
         <div id="recorder"></div>
         <button onclick="start()">播放</button><br>
         <div id="fps"></div>
-        <canvas id="playerCanvas"></canvas>
+        <canvas id="playerCanvas"></canvas><br>
         <audio id="bgm" controls></audio>
         <script src="js/ease.js"></script>
         <script src="js/popup.js"></script>

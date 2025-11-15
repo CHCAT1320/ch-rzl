@@ -26,14 +26,16 @@ async def handle(websocket):
             "-r", "60",
             "-i", "pipe:0",
             "-c:v", "libx264",
-            "-crf", "28",
-            "-preset", "ultrafast",  # 优化：快速编码，减少延迟
+            #"-crf", "28",
+            "-preset", "superfast",  # 更快的编码预设（ultrafast→superfast，平衡速度和体积）
+            "-tune", "zerolatency",  # 针对实时编码优化
+            "-threads", "0",
             "-c:a", "aac",
             "-b:a", "128k",
             "../output.mp4"
         ],
         stdin=subprocess.PIPE,
-        bufsize=1024*1024  # 1MB缓冲区，减少IO次数
+        bufsize=1024*1024*4  # 增大缓冲区到4MB，减少IO阻塞
     )
     
     # 音频混合器实例（全局复用，避免重复初始化）
@@ -116,6 +118,8 @@ async def handle(websocket):
         process.stdin.close()
         process.wait()
         print("录制结束")
+        # 断开WebSocket连接
+        await websocket.close()
 
 def add_audio():
     """音视频合并（优化：使用快速编码参数）"""

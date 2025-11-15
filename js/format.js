@@ -801,9 +801,9 @@ class note {
         if (this.isHit === false && this.isPlayHit === false && tick >= this.info.time) {
             hitI.push(new hit(tick, x, this.isBad))
             if (!this.isBad) playSound(this.info.type);
-            msgBoxI.push(new msgBox(tickToSeconds(tick), -cvs.height / 2 - 200))
-            screenShortI.push(new screenShort(tickToSeconds(tick), -200))
-            autoHandData.push(x)
+            // msgBoxI.push(new msgBox(tickToSeconds(tick), -cvs.height / 2 - 200))
+            // screenShortI.push(new screenShort(tickToSeconds(tick), -200))
+            // autoHandData.push(x)
             this.isPlayHit = true;
         }
         if (tick < this.info.time) {
@@ -987,7 +987,8 @@ function start() {
             }
         }
     }
-    audio.play();
+    // audio.play();
+    const time1 = new Date()
     const data = {
         type: "audio",
         data: audio.src
@@ -1033,11 +1034,23 @@ function start() {
             data.type = "msg"
             data.data = "stop"
             ws.send(JSON.stringify(data))
-            recorderDiv.innerText = "渲染完成"
+            // recorderDiv.innerText = "发送完成"
+            const time2 = new Date()
+            const h = (time2.getUTCHours() - time1.getUTCHours()) * 60 * 60
+            const m = (time2.getUTCMinutes() - time1.getUTCMinutes()) * 60
+            const s = (time2.getUTCSeconds() - time1.getUTCSeconds())
+            const ms = (time2.getUTCMilliseconds() - time1.getUTCMilliseconds()) / 1000
+            recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
             // ws.close()
         }
         ws.onclose = () => {
             console.log('ws closed')
+            const time2 = new Date()
+            const h = (time2.getUTCHours() - time1.getUTCHours()) * 60 * 60
+            const m = (time2.getUTCMinutes() - time1.getUTCMinutes()) * 60
+            const s = (time2.getUTCSeconds() - time1.getUTCSeconds())
+            const ms = (time2.getUTCMilliseconds() - time1.getUTCMilliseconds()) / 1000
+            recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
             return
         }
     }
@@ -1107,7 +1120,7 @@ function start() {
             screenShortI[i].draw(timer);
         }
         // drawAutoHand()
-        // recorder()
+        recorder()
         // 更新 FPS
         const now = performance.now();
         frameCount++;

@@ -1,6 +1,7 @@
 var speedValue = 10
 var speed = (215 / 32 + speedValue) * (10 / 129);
 
+const bodyDiv = document.getElementById("body");
 const inputRange = document.createElement("input");
 inputRange.type = "range";
 inputRange.min = 3;
@@ -12,7 +13,7 @@ inputRange.oninput = function() {
     speedValue = Number(this.value);
     speed = (215 / 32 + speedValue) * (10 / 129);
 }
-document.body.appendChild(inputRange);
+bodyDiv.appendChild(inputRange);
 
 var revelationSize = 1
-var isDrawAutoHand = true
+var isDrawAutoHand = false
