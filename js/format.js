@@ -1036,20 +1036,22 @@ function start() {
             ws.send(JSON.stringify(data))
             // recorderDiv.innerText = "发送完成"
             const time2 = new Date()
-            const h = (time2.getUTCHours() - time1.getUTCHours()) * 60 * 60
-            const m = (time2.getUTCMinutes() - time1.getUTCMinutes()) * 60
-            const s = (time2.getUTCSeconds() - time1.getUTCSeconds())
-            const ms = (time2.getUTCMilliseconds() - time1.getUTCMilliseconds()) / 1000
+            const diff = time1 - time2
+            const h = Math.floor(diff / 3600000).toString().padStart(2, '0')
+            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
+            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
+            const ms = Math.floor(diff % 1000).toString().padStart(3, '0')
             recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
             // ws.close()
         }
         ws.onclose = () => {
             console.log('ws closed')
             const time2 = new Date()
-            const h = (time2.getUTCHours() - time1.getUTCHours()) * 60 * 60
-            const m = (time2.getUTCMinutes() - time1.getUTCMinutes()) * 60
-            const s = (time2.getUTCSeconds() - time1.getUTCSeconds())
-            const ms = (time2.getUTCMilliseconds() - time1.getUTCMilliseconds()) / 1000
+            const diff = time1 - time2
+            const h = Math.floor(diff / 3600000).toString().padStart(2, '0')
+            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
+            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
+            const ms = Math.floor(diff % 1000).toString().padStart(3, '0')
             recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
             return
         }
