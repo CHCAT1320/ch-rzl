@@ -5,7 +5,6 @@ import os
 import asyncio
 from tkinter import messagebox
 import json
-import struct
 import mixAudio
 from concurrent.futures import ThreadPoolExecutor  # 新增：线程池处理音频混合
 
@@ -21,29 +20,22 @@ audio_executor = ThreadPoolExecutor(max_workers=2)
 async def handle(websocket):
     # 启动ffmpeg进程（优化：增加输入缓冲区大小，避免阻塞）
     process = subprocess.Popen(
-        [ # by kimi
+        [
             ffmpegPath, "-y",
-            "-f", "rawvideo",          # 裸数据
-            "-vcodec", "rawvideo",     # 显式指定 raw 解码器（可省）
-            # "-pixel_format", "rgb24",   # 每像素 5 字节
-            "-pixel_format", "rgba",   # 每像素 5 字节 # shut the fuck up
-            "-video_size", "1080x1920",# 宽 x 高
-            "-framerate", "60",
-            "-thread_queue_size", "512", # 防止 pipe 阻塞
-            "-i", "pipe:0",            # 标准输入
+            "-f", "image2pipe", "-vcodec", "png",
+            "-r", "60",
+            "-i", "pipe:0",
             "-c:v", "libx264",
-            "-preset", "superfast",
-            "-tune", "zerolatency",
+            #"-crf", "28",
+            "-preset", "superfast",  # 更快的编码预设（ultrafast→superfast，平衡速度和体积）
+            "-tune", "zerolatency",  # 针对实时编码优化
             "-threads", "0",
-            "-pix_fmt", "yuv420p",     # 如果播放器兼容性优先，可保留
-            # "-crf", "23",            # 想压得更小就打开
             "-c:a", "aac",
             "-b:a", "128k",
-            "-shortest",               # 没音频时可省
             "../output.mp4"
         ],
         stdin=subprocess.PIPE,
-        bufsize=1024*1024*32  # 增大缓冲区到32MB，减少IO阻塞 # shut the fuck up
+        bufsize=1024*1024*4  # 增大缓冲区到4MB，减少IO阻塞
     )
     
     # 音频混合器实例（全局复用，避免重复初始化）
@@ -51,73 +43,77 @@ async def handle(websocket):
     
     try:
         while True:
-            data = await websocket.recv()
-            typ = struct.unpack("I", data[:4])[0]
-            if typ == 0x00: # json
-                data = json.loads(data[4:])
-                if data["type"] == "audio":
-                    # 异步处理音频加载（避免阻塞WebSocket接收）
-                    base64_data = data["data"].split(",")[1]
-                    await asyncio.get_event_loop().run_in_executor(
-                        audio_executor,
-                        mixer.load,
-                        base64_data
-                    )
-                
-                elif data["type"] == "hit":
-                    # 异步混合多个音效（核心优化：并行处理）
-                    hits = data["data"]
-                    async def mix_all_hits():
-                        for hit in hits:
-                            await asyncio.get_event_loop().run_in_executor(
-                                audio_executor,
-                                mixer.mix_hit,
-                                hit["time"],
-                                hit["type"]
-                            )
-                    await mix_all_hits()
-                    # 导出音频也异步执行
-                    await asyncio.get_event_loop().run_in_executor(
-                        audio_executor,
-                        mixer.export,
-                        "../output.wav"
-                    )
-                
-                elif data["type"] == "msgH":
-                    # 异步处理追加音效
-                    await asyncio.get_event_loop().run_in_executor(
-                        audio_executor,
-                        lambda: mixer.load(open("../output.wav", "rb").read())
-                    )
-                    for hit in data["data"]:
+            data = json.loads(await websocket.recv())
+            if data["type"] == "audio":
+                # 异步处理音频加载（避免阻塞WebSocket接收）
+                base64_data = data["data"].split(",")[1]
+                await asyncio.get_event_loop().run_in_executor(
+                    audio_executor,
+                    mixer.load,
+                    base64_data
+                )
+            
+            elif data["type"] == "hit":
+                # 异步混合多个音效（核心优化：并行处理）
+                hits = data["data"]
+                async def mix_all_hits():
+                    for hit in hits:
                         await asyncio.get_event_loop().run_in_executor(
                             audio_executor,
                             mixer.mix_hit,
                             hit["time"],
-                            3
+                            hit["type"]
                         )
-                    await asyncio.get_event_loop().run_in_executor(
-                        audio_executor,
-                        mixer.export,
-                        "../output1.wav"
-                    )
-                
-                elif data["type"] == "msg" and data["data"] == "stop":
-                    print("停止录制")
-                    process.stdin.close()
-                    process.wait()
-                    # 异步执行音视频合并，避免阻塞
-                    await asyncio.get_event_loop().run_in_executor(
-                        audio_executor,
-                        add_audio
-                    )
-                    break
-            elif typ == 0x01: # rgba bytes
-                width, height = struct.unpack("II", data[4:12]) # shut the fuck up
-                process.stdin.write(data[12:])
+                await mix_all_hits()
+                # 导出音频也异步执行
+                await asyncio.get_event_loop().run_in_executor(
+                    audio_executor,
+                    mixer.export,
+                    "../output.wav"
+                )
+            
+            elif data["type"] == "screen":
+                # 处理屏幕截图（优化：减少Base64前缀处理耗时）
+                img_data = data["data"]
+                if img_data.startswith(("data:image/", "data:img/")):
+                    img_bytes = base64.b64decode(img_data.split(",", 1)[1])
+                else:
+                    img_bytes = base64.b64decode(img_data)  # 兼容无前缀情况
+                # 写入FFmpeg管道（非阻塞写入）
+                process.stdin.write(img_bytes)
                 process.stdin.flush()
                 await websocket.send("ok")
-                
+            
+            elif data["type"] == "msgH":
+                # 异步处理追加音效
+                await asyncio.get_event_loop().run_in_executor(
+                    audio_executor,
+                    lambda: mixer.load(open("../output.wav", "rb").read())
+                )
+                for hit in data["data"]:
+                    await asyncio.get_event_loop().run_in_executor(
+                        audio_executor,
+                        mixer.mix_hit,
+                        hit["time"],
+                        3
+                    )
+                await asyncio.get_event_loop().run_in_executor(
+                    audio_executor,
+                    mixer.export,
+                    "../output1.wav"
+                )
+            
+            elif data["type"] == "msg" and data["data"] == "stop":
+                print("停止录制")
+                process.stdin.close()
+                process.wait()
+                # 异步执行音视频合并，避免阻塞
+                await asyncio.get_event_loop().run_in_executor(
+                    audio_executor,
+                    add_audio
+                )
+                break
+    
     finally:
         process.stdin.close()
         process.wait()

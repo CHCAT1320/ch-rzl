@@ -954,17 +954,6 @@ class hit {
     }
 }
 
-const SHUT_THE_FUCK_UP = rgba => {
-    return rgba; // fuck the up shut the fuck up
-    const rgb = new Uint8Array(rgba.length / 4 * 3);
-    for (let i = 0; i < rgba.length; i += 4) {
-        rgb[i / 4 * 3] = rgba[i];
-        rgb[i / 4 * 3 + 1] = rgba[i + 1];
-        rgb[i / 4 * 3 + 2] = rgba[i + 2];
-    }
-    return rgb;
-};
-
 function drawAutoHand(){
     if (isDrawAutoHand === false) return
     ctx.save();
@@ -1006,20 +995,11 @@ function start() {
     }
     const recorderDiv = document.getElementById("recorder")
     const ws = new WebSocket('ws://localhost:8085');
-    const sed = (data, typ, ext) => {
-        if (typ == "json") {
-            data = JSON.stringify(data)
-            ws.send(new Blob([new Uint32Array([0x00]), new TextEncoder().encode(data)]));
-        } else if (typ == "u8arr") {
-            ws.send(new Blob([new Uint32Array([0x01, ext.width, ext.height]), data]));
-        }
-    };
-
     ws.onopen = () => {
         console.log('ws open')
         cvs.style.display = "none"
         recorderDiv.innerText = "解析音频中..."
-        sed(data, "json")
+        ws.send(JSON.stringify(data))
         const hitData = []
         for (let i = 0; i < noteI.length; i++) {
             const note = noteI[i]
@@ -1032,23 +1012,18 @@ function start() {
         data.type = "hit"
         data.data = hitData
         recorderDiv.innerText = "混合音效中..."
-        sed(data, "json")
+        ws.send(JSON.stringify(data))
         data.type = "screen"
-        // shut the fuck up
-        sed(SHUT_THE_FUCK_UP(cvs.getContext("2d").getImageData(0, 0, cvs.width, cvs.height).data), "u8arr", {
-            width: cvs.width,
-            height: cvs.height
-        })
+        data.data = cvs.toDataURL()
+        ws.send(JSON.stringify(data))
     }
     function recorder() {
         ws.onmessage = (e) => {
             if (e.data === "ok") {
                 recorderDiv.innerText = "正在渲染" + (audio.currentTime / audio.duration * 100).toFixed(2) + "%"
-                data.type = "screen" // shut the fuck up
-                sed(SHUT_THE_FUCK_UP(cvs.getContext("2d").getImageData(0, 0, cvs.width, cvs.height).data), "u8arr", {
-                    width: cvs.width,
-                    height: cvs.height
-                });
+                data.type = "screen"
+                data.data = cvs.toDataURL()
+                ws.send(JSON.stringify(data))
                 audio.currentTime = audio.currentTime + 1 / 60;
             }
         }
@@ -1058,7 +1033,7 @@ function start() {
             // ws.send(JSON.stringify(data))
             data.type = "msg"
             data.data = "stop"
-            sed(data, "json")
+            ws.send(JSON.stringify(data))
             // recorderDiv.innerText = "发送完成"
             const time2 = new Date()
             const diff = Math.abs(time1 - time2)

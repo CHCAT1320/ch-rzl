@@ -34,7 +34,7 @@ class AudioMixer:
             audio_bytes = base64.b64decode(base64_audio)
             audio_segment = AudioSegment.from_file(
                 io.BytesIO(audio_bytes),
-                # format="wav" # shut the fuck up
+                format="wav"
             )
             
             # 只在必要时转换格式（减少计算）

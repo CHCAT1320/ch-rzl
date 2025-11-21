@@ -1,7 +1,5 @@
 const cvs = document.getElementById("playerCanvas");
-const ctx = cvs.getContext("2d", {
-    willReadFrequently: true // shut the fuck up
-});
+const ctx = cvs.getContext("2d");
 // cvs.width = 360;
 // cvs.height = 640;
 // cvs.width = 720;
