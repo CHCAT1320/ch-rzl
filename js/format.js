@@ -969,7 +969,86 @@ function drawAutoHand(){
 
 }
 
+function drawRevelationInfo(tick) {
+    if (revelationSize === 1) return
+    function drawText(text, x, y) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.font = `${12 * (cvs.width / 360)}px rizline`;
+        ctx.strokeStyle = "white"
+        ctx.lineWidth = 0.5 * (cvs.width / 360)
+        // ctx.textAlign = "center";
+        // ctx.textBaseline = "middle";
+        ctx.strokeText(text, x, y)
+        ctx.fillText(text, x, y)
+    }
+    let text = `Canvas count: ${canvasI.length}`
+    let w = ctx.measureText(text).width
+    let x = -170 * (cvs.width / 360)
+    let y = -cvs.height / 2 - 170 * (cvs.height / 640)
+    drawText(text, x, y)
+    let h = ctx.measureText(text).actualBoundingBoxAscent + 6 * (cvs.width / 360)
+    let moveCount = 0
+    let speedCount = 0
+    for (let i = 0; i < canvasI.length; i++) {
+        const canvas = canvasI[i]
+        moveCount += canvas.xM.length
+        speedCount += canvas.sK.length
+    }
+    text = `Canvas move event count: ${moveCount}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Canvas speed event count: ${speedCount}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Line count: ${chart.lines.length}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    let pointCount = 0
+    for (let i = 0; i < chart.lines.length; i++) {
+        const line = chart.lines[i]
+        pointCount += line.linePoints.length
+    }
+    text = `Point count: ${pointCount}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Note count: ${noteI.length}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Camera scale: ${cameraScale(tick) / revelationSize}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Revelation scale: ${revelationSize}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Camera scale event count: ${chart.cameraMove.scaleKeyPoints.length}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Camera move event count: ${chart.cameraMove.xPositionKeyPoints.length}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Challange time count: ${chart.challengeTimes.length}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    text = `Speed: ${speedValue}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
+    
+}
+
 function start() {
+    let canSendScreen = false
     const audio = document.getElementById("bgm");
     for (let i = 0; i < chart.canvasMoves.length; i++) {
         canvasI.push(new canvas(i));
@@ -988,7 +1067,7 @@ function start() {
         }
     }
     // audio.play();
-    const time1 = new Date()
+    // const time1 = new Date()
     const data = {
         type: "audio",
         data: audio.src
@@ -1017,45 +1096,25 @@ function start() {
         data.data = cvs.toDataURL()
         ws.send(JSON.stringify(data))
     }
-    function recorder() {
-        ws.onmessage = (e) => {
-            if (e.data === "ok") {
-                recorderDiv.innerText = "正在渲染" + (audio.currentTime / audio.duration * 100).toFixed(2) + "%"
-                data.type = "screen"
-                data.data = cvs.toDataURL()
-                ws.send(JSON.stringify(data))
-                audio.currentTime = audio.currentTime + 1 / 60;
-            }
+    ws.onmessage = (event) => {
+        if (event.data === "ok") {
+            canSendScreen = true
         }
+    }
+    function recorder() {
+        if (canSendScreen === false) return
         if (audio.currentTime >= audio.duration) {
-            // data.type = "msgH"
-            // data.data = msgH
-            // ws.send(JSON.stringify(data))
             data.type = "msg"
             data.data = "stop"
             ws.send(JSON.stringify(data))
-            // recorderDiv.innerText = "发送完成"
-            const time2 = new Date()
-            const diff = Math.abs(time1 - time2)
-            const h = Math.floor(diff / 3600000).toString().padStart(2, '0')
-            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
-            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
-            const ms = Math.floor(diff % 1000).toString().padStart(3, '0')
-            recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
-            return
-            // ws.close()
-        }
-        ws.onclose = () => {
-            console.log('ws closed')
-            const time2 = new Date()
-            const diff = Math.abs(time1 - time2)
-            const h = Math.floor(diff / 3600000).toString().padStart(2, '0')
-            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')
-            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')
-            const ms = Math.floor(diff % 1000).toString().padStart(3, '0')
-            recorderDiv.innerText = "渲染完成，耗时：" + h + "小时" + m + "分" + s + "秒" + ms + "毫秒"
+            ws.close()
             return
         }
+        data.type = "screen"
+        data.data = cvs.toDataURL()
+        ws.send(JSON.stringify(data))
+        audio.currentTime += 1 / 60
+        recorderDiv.innerText = `正在渲染 ${(audio.currentTime / audio.duration * 100).toFixed(2)}%`
     }
     function update() {
         ctx.clearRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
@@ -1088,6 +1147,7 @@ function start() {
         drawCombo();
         drawScreenBoard()
         drawShuiYin()
+        drawRevelationInfo(tick)
         for (let i = 0; i < msgBoxI.length; i++) {
             if (timer > msgBoxI[i].time + msgBoxI[i].holdTime + msgBoxI[i].transitionTime) {
                 msgBoxI.splice(i, 1);
@@ -1123,6 +1183,7 @@ function start() {
             screenShortI[i].draw(timer);
         }
         // drawAutoHand()
+        
         recorder()
         // 更新 FPS
         const now = performance.now();

@@ -15,5 +15,5 @@ inputRange.oninput = function() {
 }
 bodyDiv.appendChild(inputRange);
 
-var revelationSize = 1
+var revelationSize = 0.3
 var isDrawAutoHand = false
