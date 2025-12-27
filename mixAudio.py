@@ -2,7 +2,6 @@ import base64
 import io
 import numpy as np
 from pydub import AudioSegment
-from pydub.utils import make_chunks
 import os
 
 # 配置本地ffmpeg路径（优先使用环境变量，其次本地路径）
@@ -26,6 +25,16 @@ class AudioMixer:
         self.preloaded_effects = {}
         # 基础音频数组缓存（避免重复转换）
         self.base_array = None
+        # 音量调节参数（1.0为原始音量）
+        self.base_volume = 1.0  # 基础音频音量比例
+        self.effect_volume = 1.0  # 音效音量比例
+
+    def set_volume(self, base_vol=None, effect_vol=None):
+        """设置音量比例（0.0-2.0建议范围，避免过大失真）"""
+        if base_vol is not None:
+            self.base_volume = max(0.0, min(2.0, base_vol))  # 限制范围
+        if effect_vol is not None:
+            self.effect_volume = max(0.0, min(2.0, effect_vol))  # 限制范围
 
     def load(self, base64_audio):
         """加载base64编码的WAV格式基础音频（优化：减少格式转换次数）"""
@@ -49,11 +58,12 @@ class AudioMixer:
                 self.frame_per_sec = self.sample_rate * self.channels
             
             self.base_audio = audio_segment
-            # 直接转换为int32数组缓存（混合时无需重复转换）
-            self.base_array = np.array(
+            # 转换为int32数组并应用基础音量（混合时无需重复转换）
+            base_samples = np.array(
                 self.base_audio.get_array_of_samples(),
                 dtype=np.int32  # 用int32避免混合时溢出
             )
+            self.base_array = (base_samples * self.base_volume).astype(np.int32)
             
             # 预加载所有音效并适配格式（仅在基础音频格式变化时执行）
             self._preload_and_adapt_effects()
@@ -79,9 +89,10 @@ class AudioMixer:
                              .set_channels(self.channels)\
                              .set_sample_width(self.sample_width)
                 
-                # 转换为int32数组并缓存（同时存储长度，避免重复计算len()）
-                effect_array = np.array(effect.get_array_of_samples(), dtype=np.int32)
-                self.preloaded_effects[effect_type] = (effect_array, len(effect_array))
+                # 转换为int32数组并应用音效音量，然后缓存
+                effect_samples = np.array(effect.get_array_of_samples(), dtype=np.int32)
+                adjusted_effect = (effect_samples * self.effect_volume).astype(np.int32)
+                self.preloaded_effects[effect_type] = (adjusted_effect, len(adjusted_effect))
             except Exception as e:
                 print(f"预加载音效 {effect_type} 失败: {e}")
 

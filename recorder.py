@@ -70,6 +70,7 @@ def mix_audio(baseAudioData, hitData):
     :param audio_data: Base64编码的音频数据
     """
     global mixAudioI
+    mixAudioI.set_volume(0.8, 1.0)  # 设置音量（默认1.0）
     mixAudioI.load(baseAudioData.split(",")[1])
     for hit in hitData:
         mixAudioI.mix_hit(hit["time"], hit["type"])

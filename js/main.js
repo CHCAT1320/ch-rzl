@@ -4,8 +4,8 @@ const ctx = cvs.getContext("2d");
 // cvs.height = 640;
 // cvs.width = 720;
 // cvs.height = 1280;
-// cvs.width = 2160;
-// cvs.height = 3840;
+//cvs.width = 2160;
+//cvs.height = 3840;
 cvs.width = 1080;
 cvs.height = 1920;
 ctx.translate(cvs.width / 2, cvs.height / 2 + 200 * (cvs.height / 640));
@@ -91,6 +91,7 @@ function playSound(audioBufferIndex) {
 
 
 var chart = null;
+var corverPage = null;
 function loadSettingJs(){
     const settingJs = document.createElement("script");
     settingJs.src = "js/setting.js";
@@ -166,8 +167,22 @@ function bgmFiles(files){
     // 调用readAsText并传入文件内容
     reader.readAsDataURL(file);
 }
-
-// function start(){
-//     const audio = document.getElementById("bgm");
-//     audio.play();
-// }
+function corverFiles(files) {
+    // 获取文件
+    var file = files[0];
+    // 创建FileReader对象
+    var reader = new FileReader();
+    // 解析文件数据
+    reader.onload = function(e) {
+        corverPage = e.target.result;
+        const script = document.createElement("script");
+        script.src = "js/drawCoverPage.js";
+        script.onload = function() {
+            console.log("drawCoverPage.js加载成功")
+            drawCoverPage();
+        }
+        document.head.appendChild(script);
+    }
+    // 调用readAsText并传入文件内容
+    reader.readAsDataURL(file);
+}

@@ -222,22 +222,51 @@ function getChallengeTimeIndex(tick) {
 function drawBackground(tick) {
     const themes = chart.themes;
     const challengeTimesIndex = getChallengeTimeIndex(tick);
-    if (challengeTimesIndex !== -1) {
-        ctx.save();
-        const color = themes[challengeTimesIndex].colorsList[0];
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
-        ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
-        ctx.restore();
-        return;
-    }
+    // if (challengeTimesIndex !== -1) {
+    //     ctx.save();
+    //     const color = themes[challengeTimesIndex].colorsList[0];
+    //     ctx.beginPath();
+    //     ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
+    //     ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
+    //     ctx.restore();
+    //     return;
+    // }
     const color = themes[0].colorsList[0];
     ctx.save();
     ctx.beginPath();
     ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
     ctx.fillRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
     ctx.restore();
+    drawRiztimeBackground(tick);
 }
+
+function drawRiztimeBackground(tick) {
+    const themes = chart.themes;
+    var r = (640 + 200) * (cvs.height / 640);
+    var y = 150 * (cvs.height / 640);
+    for (let i = 0; i < chart.challengeTimes.length; i++) {
+        const challengeTime = chart.challengeTimes[i];
+        if (tick >= challengeTime.start && tick <= challengeTime.end + challengeTime.transTime) {
+            var color = themes[i + 1].colorsList[0];
+            if (tick >= challengeTime.start && tick <= challengeTime.start + challengeTime.transTime) {
+                 r = r * easeFuncs[2]((tick - challengeTime.start) / challengeTime.transTime);
+            } else if (tick >= challengeTime.end && tick <= challengeTime.end + challengeTime.transTime) {
+                 r = r + (-r) * easeFuncs[3]((tick - challengeTime.end) / challengeTime.transTime);
+                 y = -cvs.height / 2 - 200 * (cvs.height / 640)
+            }
+
+        }
+    }
+    if (!color || !r) return;
+    ctx.save();;
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(" + color.r + "," + color.g + "," + color.b + "," + color.a + ")";
+    ctx.arc(0, y, r, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore();
+
+}
+
 function drawCover(tick) {
     if (revelationSize !== 1) return;
     ctx.save();
@@ -289,24 +318,57 @@ function calculateMixedColor(tick, pointColor, lineColor) {
   return mixColor(pointColor, currentLineColor);
 }
 
+// /**
+//  * 混合两种颜色
+//  * @param {Object} color1 - 第一种颜色 {r, g, b, a}
+//  * @param {Object} color2 - 第二种颜色 {r, g, b, a}
+//  * @returns {Object} 混合后的颜色
+//  */
+// function mixColor({ r: r1, g: g1, b: b1, a: a1 }, { r: r2, g: g2, b: b2, a: a2 }) {
+//   // 边界情况处理
+//   if (a2 === 0) return { r: r1, g: g1, b: b1, a: a1 };
+//   if (a2 === 255) return { r: r2, g: g2, b: b2, a: a1 };
+  
+//   // 计算混合比例并应用
+//   const mixRatio = a2 / 255;
+//   return { 
+//     r: Math.round(r1 + (r2 - r1) * mixRatio), 
+//     g: Math.round(g1 + (g2 - g1) * mixRatio), 
+//     b: Math.round(b1 + (b2 - b1) * mixRatio), 
+//     a: a1
+//   };
+// }
+
+// 抛弃lchzh3473的混合函数，以下函数由豆包编写 ==> 原因是混合出来的颜色太浅了
+
 /**
- * 混合两种颜色
- * @param {Object} color1 - 第一种颜色 {r, g, b, a}
- * @param {Object} color2 - 第二种颜色 {r, g, b, a}
- * @returns {Object} 混合后的颜色
+ * 混合两种颜色（标准Alpha混合算法，最终透明度固定为第一个颜色的透明度）
+ * @param {Object} color1 - 第一种颜色 {r, g, b, a}，a取值0-255
+ * @param {Object} color2 - 第二种颜色 {r, g, b, a}，a取值0-255
+ * @returns {Object} 混合后的颜色 {r, g, b, a}
  */
 function mixColor({ r: r1, g: g1, b: b1, a: a1 }, { r: r2, g: g2, b: b2, a: a2 }) {
-  // 边界情况处理
+  // 边界情况处理：第二个颜色完全透明，直接返回第一个颜色
   if (a2 === 0) return { r: r1, g: g1, b: b1, a: a1 };
+  // 第二个颜色完全不透明，直接返回第二个颜色但保留第一个的透明度
   if (a2 === 255) return { r: r2, g: g2, b: b2, a: a1 };
-  
-  // 计算混合比例并应用
-  const mixRatio = a2 / 255;
-  return { 
-    r: Math.round(r1 + (r2 - r1) * mixRatio), 
-    g: Math.round(g1 + (g2 - g1) * mixRatio), 
-    b: Math.round(b1 + (b2 - b1) * mixRatio), 
-    a: a1
+
+  // 转换透明度为0-1的浮点数
+  const alpha2 = a2 / 255;
+
+  // 标准Alpha混合公式计算RGB值（核心优化：解决颜色偏浅问题）
+  // 公式调整：适配固定使用第一个颜色透明度的场景
+  const mixRatio = alpha2; // 第二个颜色的透明度占比
+  const r = Math.round(r1 * (1 - mixRatio) + r2 * mixRatio);
+  const g = Math.round(g1 * (1 - mixRatio) + g2 * mixRatio);
+  const b = Math.round(b1 * (1 - mixRatio) + b2 * mixRatio);
+
+  // 返回混合结果（透明度固定为第一个颜色的a值，RGB值限制在0-255）
+  return {
+    r: Math.max(0, Math.min(255, r)),
+    g: Math.max(0, Math.min(255, g)),
+    b: Math.max(0, Math.min(255, b)),
+    a: a1 // 固定沿用第一个颜色的透明度
   };
 }
 
@@ -331,16 +393,20 @@ function getCurrentLineColor(lineColor, tick) {
   // 转换为时间片段结构
   const colorSegments = lineColor.map((segment, index) => {
     const nextSegment = lineColor[index + 1];
-    return {
+    const ret =  {
       startSeconds: segment.time,
       endSeconds: nextSegment ? nextSegment.time : segment.time,
       startColor: segment.startColor,
       endColor: segment.endColor
     };
+    if (!ret) console.log("Error color is null", segment, nextSegment);
+    return ret;
   });
 
   // 调用通用的时间颜色插值函数
-  return getCurrentColor(colorSegments, tick);
+  const ret = getCurrentColor(colorSegments, tick);
+  if (!ret) console.log("Error ret is null", colorSegments, tick);
+  return ret
 }
 
 /**
@@ -459,7 +525,7 @@ function drawShuiYin() {
     let shuiYin = "CHART REVELATION : CH-RZL Player VERSION 0.1.1 ALL CODE BY CHCAT1320"
     if (revelationSize === 1) {
         ctx.font = `${12 * (cvs.width / 360)}px rizline`;
-        shuiYin = "CH-RZL Player VERSION 0.1.1 ALL CODE BY CHCAT1320"
+        shuiYin = "CH-RZL Player VERSION 0.1.2 ALL CODE BY CHCAT1320"
     }
     ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
@@ -543,8 +609,8 @@ class canvas {
         this.x = (findValue(tick, this.xM) - cameraMoveX(tick)) * cameraScale(tick) * cvs.width;
         this.fp = this.speedToFP(tickToSeconds(tick))//findSpeedValue(tick, this.sK);
         if (revelationSize === 1) return;
-        ctx.font = `${20 * cameraScale(tick) * (cvs.width / 360)}px rizline`;
-        ctx.fillText(this.index, this.x, 20);
+        ctx.font = `${35 * cameraScale(tick) * (cvs.width / 360)}px rizline`;
+        ctx.fillText(this.index, this.x, 200 * cameraScale(tick) * (cvs.height / 540));
     }
 }
 
@@ -575,10 +641,16 @@ class line {
             const y = -(point.fp - canvas.fp) * cvs.height * speed * scale;
             
             // 超出可视区域则跳过
-            if (y < -1280) continue;
+            const unNextPoint = this.points[i - 1] ? this.points[i - 1] : this.points[i];
+            const unNextPointFp = canvasI[unNextPoint.canvasIndex].speedToFP(tickToSeconds(unNextPoint.time));
+            const unNextPointY = -(unNextPointFp - canvasI[unNextPoint.canvasIndex].fp) * cvs.height * speed * scale;
+            const offsetY = point.fp - unNextPointFp;
+            if (unNextPointY < -1280 * (cvs.height / 640) + offsetY) continue;
             
             // 更新颜色
             point.mixColor = calculateMixedColor(tick, point.color, this.info.lineColor);
+            // const { r, g, b, a } = point.mixColor;
+            // ctx.fillText([r, g, b, a], x, y)
 
             if (revelationSize !== 1){
                 ctx.save();
@@ -606,6 +678,8 @@ class line {
                 
                 // 更新下一个点颜色
                 nextPoint.mixColor = calculateMixedColor(nextPoint.time, nextPoint.color, this.info.lineColor);
+                // const { r, g, b, a } = nextPoint.mixColor;
+                // ctx.fillText([r, g, b, a], x1, y1)
                 
                 // 超出可视区域则跳过
                 if (y1 > cvs.height) continue;
@@ -773,112 +847,141 @@ class note {
         return [this.points[targetIndex], this.points[targetIndex + 1] || this.points[targetIndex]];//.xPosition * cameraScale(tick) * cvs.width + canvasI[this.points[targetIndex].canvasIndex].x;
     }
     drawNote(tick) {
-        if (this.isHit === true && tick > this.info.time && this.info.type!== 2) return;
+        // 早期返回条件检查
+        if (this.isHit === true && tick > this.info.time && this.info.type !== 2) return;
         if (this.isHit === true && this.info.type === 2 && tick >= this.otherInformations[0] + 0.5) return;
-        // this.findedPoints = this.findPoint(this.info.time)
+        
+        // **** 关键修复：在最开始保存上下文状态 ****
+        ctx.save();
+        
         const point = this.findedPoints[0];
         const nextPoint = this.findedPoints[1];
         const canvas = canvasI[point.canvasIndex];
         const nextCanvas = canvasI[nextPoint.canvasIndex];
-        // this.fp = this.info.floorPosition//findSpeedValue(this.info.time, canvas.sK)
-        const scale = cameraScale(tick)
+        const scale = cameraScale(tick);
         const pointX = point.xPosition * scale * cvs.width + canvas.x;
         const nextPointX = nextPoint.xPosition * scale * cvs.width + nextCanvas.x;
-        const easeValue = easeFuncs[point.easeType]((this.info.time - point.time) / (nextPoint.time - point.time))
+        
+        const easeValue = easeFuncs[point.easeType](
+            (this.info.time - point.time) / (nextPoint.time - point.time)
+        );
         let x = pointX + (easeValue * (nextPointX - pointX));
-        if (this.info.time === point.time) {
-            x = pointX;
+        
+        if (this.info.time === point.time) x = pointX;
+        if (this.info.time === nextPoint.time) x = nextPointX;
+        
+        if (this.info.type === 2 && tick >= this.info.time) {
+            const easeV = easeFuncs[point.easeType](
+                (tick - point.time) / (nextPoint.time - point.time)
+            );
+            x = pointX + (easeV * (nextPointX - pointX));
         }
-        if (this.info.time === nextPoint.time) {
-            x = nextPointX;
-        }
-        if (this.info.type === 2) {
-            if (tick >= this.info.time) {
-                const easeV = easeFuncs[point.easeType]((tick - point.time) / (nextPoint.time - point.time))
-                x = pointX + (easeV * (nextPointX - pointX));
-            }
-        }
+        
+        // 击打逻辑
         if (this.isHit === false && this.isPlayHit === false && tick >= this.info.time) {
-            hitI.push(new hit(tick, x, this.isBad))
+            hitI.push(new hit(tick, x, this.isBad));
             if (!this.isBad) playSound(this.info.type);
-            // msgBoxI.push(new msgBox(tickToSeconds(tick), -cvs.height / 2 - 200))
-            // screenShortI.push(new screenShort(tickToSeconds(tick), -200))
-            // autoHandData.push(x)
             this.isPlayHit = true;
         }
+        
+        // 状态更新
         if (tick < this.info.time) {
             this.isHit = false;
             this.isPlayHit = false;
-        }else {
+        } else {
             this.isHit = true;
         }
+        
+        // 计算Y坐标
         let y = -(this.fp - canvas.fp) * cvs.height * speed * cameraScale(tick);
-        if (y < -cvs.height) return;
-        if (this.info.type === 2) if (tick >= this.info.time && tick <= this.otherInformations[0] + 0.5) y = 0;
-        ctx.save();
-        ctx.beginPath();
-        const challengeTimeIndex = getChallengeTimeIndex(tick)
-        let color
-        if (challengeTimeIndex === -1) {
-            color = chart.themes[0].colorsList[1]
-        }else {
-            color = chart.themes[challengeTimeIndex].colorsList[1]
+        if (y < -cvs.height) {
+            ctx.restore(); // 提前返回时也要恢复状态
+            return;
         }
-        const wh = 20 * scale * this.getHoldHeadScale(tick, this.info.type) * (cvs.width / 360)
+        
+        // Hold音符特殊处理
+        if (this.info.type === 2 && tick >= this.info.time && tick <= this.otherInformations[0] + 0.5) {
+            y = 0;
+        }
+        
+        // **** 颜色计算和绘制头部 ****
+        const challengeTimeIndex = getChallengeTimeIndex(tick);
+        let color = challengeTimeIndex === -1 
+            ? chart.themes[0].colorsList[1] 
+            : chart.themes[challengeTimeIndex].colorsList[1];
+        
+        // 尺寸计算
+        const wh = (this.info.type === 2 || this.info.type === 1)
+            ? 18 * scale * this.getHoldHeadScale(tick, this.info.type) * (cvs.width / 360)
+            : 20 * scale * this.getHoldHeadScale(tick, this.info.type) * (cvs.width / 360);
         const offset = wh / 2;
-        ctx.fillStyle = getRGBAString(color);
-        if (this.info.type === 1) ctx.fillStyle = "white"
-        ctx.strokeStyle = "black"
-        ctx.lineWidth = 3 * scale * (cvs.width / 360);
+        
+        // 动态X计算（用于拖动中的Hold）
         if (tick > this.info.time) {
-            const point = this.findPoint(tick);
-            const point1 = point[0];
-            const point2 = point[1];
-            const canvas = canvasI[point1.canvasIndex];
-            const nextCanvas = canvasI[point2.canvasIndex];
-            const easeValue = easeFuncs[point1.easeType]((tick - point1.time) / (point2.time - point1.time))
-            const x1 = point1.xPosition * scale * cvs.width + canvas.x;
-            const x2 = point2.xPosition * scale * cvs.width + nextCanvas.x;
-            x = x1 + (easeValue * (x2 - x1));
+            const dynamicPoint = this.findPoint(tick);
+            const point1 = dynamicPoint[0];
+            const point2 = dynamicPoint[1];
+            const canvas1 = canvasI[point1.canvasIndex];
+            const canvas2 = canvasI[point2.canvasIndex];
+            const dynamicEase = easeFuncs[point1.easeType](
+                (tick - point1.time) / (point2.time - point1.time)
+            );
+            const x1 = point1.xPosition * scale * cvs.width + canvas1.x;
+            const x2 = point2.xPosition * scale * cvs.width + canvas2.x;
+            x = x1 + (dynamicEase * (x2 - x1));
         }
+        
+        // **** 绘制音符头 ****
+        ctx.beginPath();
         ctx.rect(x - offset, y - offset, wh, wh);
+        
+        // 设置颜色：Hold和Drag音符头为白色
+        ctx.fillStyle = getRGBAString(color);
+        if (this.info.type === 1 || this.info.type === 2) {
+            ctx.fillStyle = "white"; // 你的白色设置在这里生效
+        }
+        
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3 * scale * (cvs.width / 360);
         ctx.fill();
         ctx.stroke();
+        
+        // **** 绘制Hold身体（在restore之前） ****
+        if (this.info.type === 2) {
+            // drawHoldBody 内部有自己的 save/restore，不会污染外部状态
+            this.drawHoldBody(tick, x, y, scale, color);
+        }
+        
+        // **** 关键修复：在最后恢复上下文状态 ****
         ctx.restore();
-        if (this.info.type === 2) this.drawHoldBody(tick, x, y, scale, color)
     }
+    
+    // 辅助方法保持不变
     drawHoldBody(tick, x, y, scale, color) {
         if (tick > this.otherInformations[0]) return;
-        if (tick > this.info.time) {
-            const point = this.findPoint(tick);
-            const point1 = point[0];
-            const point2 = point[1];
-            const canvas = canvasI[point1.canvasIndex];
-            const nextCanvas = canvasI[point2.canvasIndex];
-            const easeValue = easeFuncs[point1.easeType]((tick - point1.time) / (point2.time - point1.time))
-            const x1 = point1.xPosition * scale * cvs.width + canvas.x;
-            const x2 = point2.xPosition * scale * cvs.width + nextCanvas.x;
-            x = x1 + (easeValue * (x2 - x1));
-        }
         
+        // Hold身体内部独立的save/restore
         ctx.save();
+        
         const otherInformations = this.otherInformations;
         const endFp = findSpeedValue(otherInformations[0], canvasI[otherInformations[1]].sK);
-        let endY = 0;
+        const endY = (canvasI[otherInformations[1]].fp - endFp) * cvs.height * speed * scale;
         
-        endY = (canvasI[otherInformations[1]].fp - endFp) * cvs.height * speed * scale;
-        const h = endY - y; // 长条总长度
-        const w = 10 * scale * (cvs.width / 360); // 宽度
-        const offset = w / 2; // X轴偏移量
-        const offsetY = 10 * scale * (cvs.height / 640); // Y轴偏移量
-
+        const h = endY - y;
+        const w = 10 * scale * (cvs.width / 360);
+        const offset = w / 2;
+        const offsetY = 10 * scale * (cvs.height / 640);
+        
+        ctx.beginPath();
         ctx.rect(x - offset, y - offsetY, w, h);
-        ctx.fillStyle = getRGBAString(color);
-        ctx.strokeStyle = "black"
+        
+        ctx.fillStyle = getRGBAString(color); // 身体使用主题色
+        ctx.strokeStyle = "black";
         ctx.lineWidth = 3 * scale * (cvs.width / 360);
+        
         ctx.fill();
         ctx.stroke();
-        ctx.restore();
+        ctx.restore(); // 恢复Hold身体绘制前的状态
     }
     
     getHoldHeadScale(tick, type) {
@@ -913,9 +1016,16 @@ class hit {
         for (let i = 0; i < this.blockCount; i++) {
             this.blocksR.push(Math.floor(Math.random() * 361))
             this.blocksD.push(1)
-            this.blockS.push(Math.floor(Math.random() * 21) + 10)
+            this.blockS.push(Math.floor(Math.random() * 20) + 10)
         }
         this.t = 0
+        if (challengeTimeIndex === -1) return
+        this.rBOffset = []
+        this.rBS = []
+        for (let i = 0; i < Math.floor(Math.random() * 5) + 1; i++) {
+            this.rBOffset.push(Math.random() * 440)
+            this.rBS.push(Math.floor(Math.random() * 10) + 10)
+        }
     }
     draw(tick) {
         ctx.save();
@@ -933,6 +1043,7 @@ class hit {
         ctx.stroke()
         ctx.restore();
         this.drawBlock(tick, this.x, 0, scale, this.color)
+        if (this.rBOffset) this.drawRiztimeBolock(tick, this.x, 0, scale, this.color)
     }
     drawBlock(tick, x, y, scale, color) {
         for (let i = 0; i < this.blockCount; i++) {
@@ -948,6 +1059,22 @@ class hit {
             ctx.beginPath();
             ctx.fillStyle = getRGBAString(color)
             ctx.rect(x1 + (wh * blockSizeAndD) / 2, y1 + (wh * blockSizeAndD) / 2 , wh - wh * blockSizeAndD, wh - wh * blockSizeAndD);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+    drawRiztimeBolock(tick, x, y, scale, color) {
+        for (let i = 0; i < this.rBOffset.length; i++) {
+            const wh = this.rBS[i] * scale * (cvs.width / 360)
+            const offset = wh / 2
+            const blockOffset = easeFuncs[11](this.t) * this.rBOffset[i] * scale * (cvs.width / 360)
+            const y1 = -(blockOffset - offset)
+            const blockSizeAndD = easeFuncs[10](this.t)
+            color.a = 255 - (255 * blockSizeAndD)
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = getRGBAString(color)
+            ctx.rect(x + (wh * blockSizeAndD) / 2, y1 + (wh * blockSizeAndD) / 2, wh - wh * blockSizeAndD, wh - wh * blockSizeAndD);
             ctx.fill();
             ctx.restore();
         }
@@ -1036,6 +1163,10 @@ function drawRevelationInfo(tick) {
     w = ctx.measureText(text).width
     y = y + h
     drawText(text, x, y)
+    text = `Camera X: ${cameraMoveX(tick)}`
+    w = ctx.measureText(text).width
+    y = y + h
+    drawText(text, x, y)
     text = `Challange time count: ${chart.challengeTimes.length}`
     w = ctx.measureText(text).width
     y = y + h
@@ -1066,7 +1197,7 @@ function start() {
             }
         }
     }
-    // audio.play();
+    audio.play();
     // const time1 = new Date()
     const data = {
         type: "audio",
@@ -1075,6 +1206,7 @@ function start() {
     const recorderDiv = document.getElementById("recorder")
     const ws = new WebSocket('ws://localhost:8085');
     ws.onopen = () => {
+        audio.pause()
         console.log('ws open')
         cvs.style.display = "none"
         recorderDiv.innerText = "解析音频中..."
