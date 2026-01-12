@@ -677,7 +677,7 @@ class line {
                 const y1 = -(nextPoint.fp - nextCanvas.fp) * cvs.height * speed * scale;
                 
                 // 更新下一个点颜色
-                nextPoint.mixColor = calculateMixedColor(nextPoint.time, nextPoint.color, this.info.lineColor);
+                nextPoint.mixColor = calculateMixedColor(tick, nextPoint.color, this.info.lineColor);
                 // const { r, g, b, a } = nextPoint.mixColor;
                 // ctx.fillText([r, g, b, a], x1, y1)
                 
@@ -733,10 +733,10 @@ class line {
         for (let t = step; t < 1; t += step) {
             // 计算颜色
             const colorEase = easeFuncs[0](t);
-            currentR = point0.mixColor.r + deltaR * colorEase;
-            currentG = point0.mixColor.g + deltaG * colorEase;
-            currentB = point0.mixColor.b + deltaB * colorEase;
-            currentA = point0.mixColor.a + deltaA * colorEase;
+            currentR = point0.mixColor.r + deltaR * t;
+            currentG = point0.mixColor.g + deltaG * t;
+            currentB = point0.mixColor.b + deltaB * t;
+            currentA = point0.mixColor.a + deltaA * t;
             
             // 计算位置
             const posEase = easeFunc(t);
@@ -1262,7 +1262,7 @@ function start() {
         for (let i = 0; i < noteI.length; i++) {
             noteI[i].drawNote(tick);
         }
-        drawCover(tick);
+        // drawCover(tick);
         for (let i = 0; i < hitI.length; i++) {
             if (timer > hitI[i].timer + 0.5) {
                 hitI.splice(i, 1);
