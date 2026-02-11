@@ -20,6 +20,9 @@ output_dir = os.path.dirname("../output.mp4")
 if not os.path.exists(output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
+# 全局ffmpeg进程变量
+process = None
+
 def initFFmpeg():
     # ffmpeg命令行参数优化：
     # 1. 移除音频相关参数（如果只录制屏幕，无音频输入）
@@ -72,11 +75,12 @@ def mix_audio(baseAudioData, hitData):
     global mixAudioI
     mixAudioI.set_volume(0.8, 1.0)  # 设置音量（默认1.0）
     mixAudioI.load(baseAudioData.split(",")[1])
+    i = 1
     for hit in hitData:
         mixAudioI.mix_hit(hit["time"], hit["type"])
+        print(f"进度：{i}/{len(hitData)} {int(i/len(hitData)*100)}%", end="\r")
+        i += 1
     mixAudioI.export("../output.wav")
-
-    
 
 def holdScreen(screen_data):
     """
@@ -91,7 +95,7 @@ def holdScreen(screen_data):
         png_data = base64.b64decode(screen_data)
         
         # 2. 写入ffmpeg标准输入（必须保持进程打开）
-        if process.poll() is None:  # 检查ffmpeg进程是否还在运行
+        if process and process.poll() is None:  # 检查ffmpeg进程是否还在运行
             process.stdin.write(png_data)
             process.stdin.flush()  # 强制刷新缓冲区，避免数据堆积
             
@@ -112,17 +116,21 @@ async def communicate(websocket):
             try:
                 data = json.loads(message)
                 if data.get("type") == "audio" and "data" in data:
+                    print("接收到音频数据")
                     baseAudioData = data["data"]
                 elif data.get("type") == "hit" and "data" in data:
+                    print("接收到音效数据")
                     hitData = data["data"]
                     mix_audio(baseAudioData, hitData)
                     initFFmpeg()
+                    await websocket.send("hitOK")
                 elif data.get("type") == "screen" and "data" in data:
                     holdScreen(data["data"])
                 elif data["type"] == "msg" and data["data"] == "stop":
                     print("停止录制")
-                    process.stdin.close()
-                    process.wait()
+                    if process:
+                        process.stdin.close()
+                        process.wait()
                 else:
                     print(f"未知消息类型：{data.get('type')}")
             except json.JSONDecodeError:
@@ -134,30 +142,36 @@ async def communicate(websocket):
     finally:
         print("连接已关闭")
 
-def main():
-    """启动WebSocket服务"""
+async def main_async():
+    """异步主函数：启动WebSocket服务并运行事件循环"""
     print("启动WebSocket服务，监听 localhost:8085...")
-    # 修复：使用正确的websockets启动方式
-    start_server = websockets.serve(
+    # 在已运行的事件循环中初始化websocket服务
+    async with websockets.serve(
         communicate,
         "localhost",
         8085,
         max_size=None,  # 无限制接收消息大小
         ping_interval=30,  # 心跳检测间隔
         ping_timeout=60  # 心跳超时时间
-    )
-    
-    # 运行事件循环
-    loop = asyncio.get_event_loop()
+    ):
+        await asyncio.Future()  # 无限运行直到被中断
+
+def main():
+    """启动WebSocket服务（兼容Python 3.10+）"""
+    global process
+    process = None  # 初始化全局进程变量
     try:
-        loop.run_until_complete(start_server)
-        loop.run_forever()
+        # 启动异步事件循环
+        asyncio.run(main_async())
     except KeyboardInterrupt:
         print("服务正在关闭...")
     finally:
         # 关闭ffmpeg进程
-        if process.poll() is None:
-            process.stdin.close()
+        if process and process.poll() is None:
+            try:
+                process.stdin.close()
+            except:
+                pass
             process.terminate()
             process.wait()
         print("服务已关闭")

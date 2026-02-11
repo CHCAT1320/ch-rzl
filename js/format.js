@@ -522,10 +522,10 @@ function drawCombo() {
 function drawShuiYin() {
     ctx.save();
     ctx.font = `${9 * (cvs.width / 360)}px rizline`;
-    let shuiYin = "CHART REVELATION : CH-RZL Player VERSION 0.1.1 ALL CODE BY CHCAT1320"
+    let shuiYin = "CHART REVELATION : CH-RZL PLAYER VERSION 0.1.3 ALL CODE BY CHCAT1320"
     if (revelationSize === 1) {
         ctx.font = `${12 * (cvs.width / 360)}px rizline`;
-        shuiYin = "CH-RZL Player VERSION 0.1.2 ALL CODE BY CHCAT1320"
+        shuiYin = "CH-RZL PLAYER VERSION 0.1.3 ALL CODE BY CHCAT1320"
     }
     ctx.fillStyle = "white";
     ctx.strokeStyle = "black";
@@ -803,8 +803,9 @@ class line {
                 const size = 30 * scale;
                 const offset = size / 2;
                 
-                ctx.rect(x - offset, y - offset, size, size);
-                ctx.lineWidth = 5 * scale;
+                // ctx.rect(x - offset, y - offset, size, size);
+                ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+                ctx.lineWidth = 3 * scale;
                 ctx.stroke();
             }
         }
@@ -867,6 +868,7 @@ class note {
         );
         let x = pointX + (easeValue * (nextPointX - pointX));
         
+        
         if (this.info.time === point.time) x = pointX;
         if (this.info.time === nextPoint.time) x = nextPointX;
         
@@ -903,7 +905,7 @@ class note {
         if (this.info.type === 2 && tick >= this.info.time && tick <= this.otherInformations[0] + 0.5) {
             y = 0;
         }
-        
+        //x = Math.sin(y / cvs.height * 3 * Math.PI) * x + x;
         // **** 颜色计算和绘制头部 ****
         const challengeTimeIndex = getChallengeTimeIndex(tick);
         let color = challengeTimeIndex === -1 
@@ -933,7 +935,8 @@ class note {
         
         // **** 绘制音符头 ****
         ctx.beginPath();
-        ctx.rect(x - offset, y - offset, wh, wh);
+        // ctx.rect(x - offset, y - offset, wh, wh);
+        ctx.arc(x, y, wh / 2, 0, 2 * Math.PI);
         
         // 设置颜色：Hold和Drag音符头为白色
         ctx.fillStyle = getRGBAString(color);
@@ -970,7 +973,7 @@ class note {
         const h = endY - y;
         const w = 10 * scale * (cvs.width / 360);
         const offset = w / 2;
-        const offsetY = 10 * scale * (cvs.height / 640);
+        const offsetY = 8 * scale * (cvs.height / 640);
         
         ctx.beginPath();
         ctx.rect(x - offset, y - offsetY, w, h);
@@ -1039,7 +1042,8 @@ class hit {
         // this.colorStr = getRGBAString(this.color)
         ctx.strokeStyle = this.colorStr
         ctx.lineWidth = (30 - (30 * easeValue)) * scale * (cvs.width / 360)
-        ctx.rect(this.x - (this.size * scale) / 2, 0 - (this.size * scale) / 2, this.size * scale, this.size * scale);
+        // ctx.rect(this.x - (this.size * scale) / 2, 0 - (this.size * scale) / 2, this.size * scale, this.size * scale);
+        ctx.arc(this.x, 0, this.size * scale / 2, 0, 2 * Math.PI);
         ctx.stroke()
         ctx.restore();
         this.drawBlock(tick, this.x, 0, scale, this.color)
@@ -1058,7 +1062,8 @@ class hit {
             ctx.save();
             ctx.beginPath();
             ctx.fillStyle = getRGBAString(color)
-            ctx.rect(x1 + (wh * blockSizeAndD) / 2, y1 + (wh * blockSizeAndD) / 2 , wh - wh * blockSizeAndD, wh - wh * blockSizeAndD);
+            // ctx.rect(x1 + (wh * blockSizeAndD) / 2, y1 + (wh * blockSizeAndD) / 2 , wh - wh * blockSizeAndD, wh - wh * blockSizeAndD);
+            ctx.arc(x1, y1, (wh - wh * blockSizeAndD) / 2, 0, 2 * Math.PI);
             ctx.fill();
             ctx.restore();
         }
@@ -1074,7 +1079,8 @@ class hit {
             ctx.save();
             ctx.beginPath();
             ctx.fillStyle = getRGBAString(color)
-            ctx.rect(x + (wh * blockSizeAndD) / 2, y1 + (wh * blockSizeAndD) / 2, wh - wh * blockSizeAndD, wh - wh * blockSizeAndD);
+            // ctx.rect(x + (wh * blockSizeAndD) / 2, y1 + (wh * blockSizeAndD) / 2, wh - wh * blockSizeAndD, wh - wh * blockSizeAndD);
+            ctx.arc(x ,y1, (wh - wh * blockSizeAndD) / 2, 0, 2 * Math.PI);
             ctx.fill();
             ctx.restore();
         }
@@ -1177,9 +1183,20 @@ function drawRevelationInfo(tick) {
     drawText(text, x, y)
     
 }
+let canSendScreen = false
+const ifRecorderButton = document.getElementById("ifRecorderButton")
+ifRecorderButton.addEventListener("click", () => {
+    if (canSendScreen === false) {
+        canSendScreen = true
+        ifRecorderButton.innerText = "暂停渲染"
+    } else {
+        canSendScreen = false
+        ifRecorderButton.innerText = "继续渲染"
+    }
+})
 
 function start() {
-    let canSendScreen = false
+    
     const audio = document.getElementById("bgm");
     for (let i = 0; i < chart.canvasMoves.length; i++) {
         canvasI.push(new canvas(i));
@@ -1197,7 +1214,7 @@ function start() {
             }
         }
     }
-    audio.play();
+    // audio.play();
     // const time1 = new Date()
     const data = {
         type: "audio",
@@ -1229,17 +1246,19 @@ function start() {
         ws.send(JSON.stringify(data))
     }
     ws.onmessage = (event) => {
-        if (event.data === "ok") {
+        if (event.data === "hitOK") {
             canSendScreen = true
         }
     }
     function recorder() {
         if (canSendScreen === false) return
         if (audio.currentTime >= audio.duration) {
+        //if (audio.currentTime >= 32) {
             data.type = "msg"
             data.data = "stop"
             ws.send(JSON.stringify(data))
             ws.close()
+            throw new Error("audio end")
             return
         }
         data.type = "screen"
@@ -1247,8 +1266,13 @@ function start() {
         ws.send(JSON.stringify(data))
         audio.currentTime += 1 / 60
         recorderDiv.innerText = `正在渲染 ${(audio.currentTime / audio.duration * 100).toFixed(2)}%`
+        // requestAnimationFrame(update)
     }
     function update() {
+        // if (ws.readyState === WebSocket.OPEN || canSendScreen === false){
+        //     requestAnimationFrame(update);
+        //     return
+        // }
         ctx.clearRect(-cvs.width / 2, -cvs.height / 2 - 200 * (cvs.height / 640), cvs.width, cvs.height);
         const timer = audio.currentTime;
         const tick = secondsToTick(timer);
@@ -1328,4 +1352,5 @@ function start() {
         requestAnimationFrame(update);
     }
     requestAnimationFrame(update);
+    // recorder()
 }
