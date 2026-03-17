@@ -389,6 +389,9 @@ function getCurrentLineColor(lineColor, tick) {
   if (tick >= lineColor[lineColor.length - 1].time) {
     return lineColor[lineColor.length - 1].endColor;
   }
+//   if (tick < lineColor[0].time) {
+//     return lineColor[0].startColor;
+//   }
 
   // 转换为时间片段结构
   const colorSegments = lineColor.map((segment, index) => {
@@ -659,6 +662,7 @@ class line {
                 ctx.fillStyle = "black"
                 ctx.fill();
                 ctx.restore();
+                return;
             }
             
             // 获取下一个点
@@ -696,10 +700,10 @@ class line {
 
     drawLine(tick, points, x1, x2, y1, y2, scale) {
         // 避免绘制零长度线段
-        if (x1 === x2 && y1 === y2) return;
+        // if (x1 === x2 && y1 === y2) return;
         
-        // 参数验证
-        if (!points || points.length < 2 || !easeFuncs) return;
+        // // 参数验证
+        // if (!points || points.length < 2 || !easeFuncs) return;
         
         const point0 = points[0];
         const point1 = points[1];
@@ -714,6 +718,16 @@ class line {
         // 计算坐标差值
         const deltaX = x2 - x1;
         const deltaY = y2 - y1;
+
+        if (x1 === x2 && y1 === y2) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x1, y1, 2 * scale, 0, 2 * Math.PI);
+            ctx.fillStyle = getRGBAString(point0.mixColor)
+            ctx.fill();
+            ctx.restore();
+            return;
+        }
         
         ctx.save();
         ctx.beginPath();
@@ -765,7 +779,7 @@ class line {
     drawJudgeCircle(tick, points, x1, x2, scale) {
         // 两点相同则无需绘制
         if (points[0] === points[1]) return;
-        if (tick < points[0].time) return; // 还没开始
+        // if (tick < points[0].time) return; // 还没开始
         if (tick >= points[1].time) return; // 已经结束
         
         // 计算时间差，避免除以零
